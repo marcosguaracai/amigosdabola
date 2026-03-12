@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Financeiro • Amigos da Bola</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon-square-180.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>(function(){const originalWarn=console.warn;console.warn=(...args)=>{if(args.some(arg=>typeof arg==="string" && arg.includes("cdn.tailwindcss.com should not be used in production"))) return;originalWarn.apply(console,args);};})();</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwind-config.js"></script>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <style>
+      dialog::backdrop {
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(6px);
+      }
+
+      #finance-payment-dialog {
+        width: min(540px, 88vw);
+        max-width: 540px;
+      }
+
+      dialog[open] {
+        animation: modal-fade-in 0.26s ease;
+      }
+
+      dialog.closing {
+        animation: modal-fade-out 0.2s ease forwards;
+      }
+
+      @keyframes modal-fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes modal-fade-out {
+        from {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(10px) scale(0.98);
+        }
+      }
+
+      /* Scrollbar personalizada (apenas WebKit navegadores) */
+::-webkit-scrollbar {
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(220, 38, 38, 0.4); /* cor primaria semi-transparente */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+      /* Exibe dia/mês/ano no input date (WebKit/Chromium) */
+      input[type="date"].date-pt::-webkit-datetime-edit {
+        display: inline-flex;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-day-field {
+        order: 1;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-text {
+        order: 2;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-month-field {
+        order: 3;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-text:nth-of-type(2) {
+        order: 4;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-year-field {
+        order: 5;
+      }
+
+      /* Sobreposição para mostrar dd/mm/aaaa */
+      .date-pt-input {
+        color: transparent;
+        caret-color: #0b0b0f;
+      }
+      .date-pt-input::placeholder {
+        color: transparent;
+      }
+      .date-pt-display {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .finance-pending-container {
+        width: 100%;
+        margin: 0 auto;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .finance-pending-container table {
+        width: 100%;
+        table-layout: fixed;
+        min-width: 560px;
+      }
+
+      .finance-pending-container th,
+      .finance-pending-container td {
+        white-space: nowrap;
+        font-size: 13px;
+        padding: 10px 8px;
+      }
+
+      .finance-pending-name {
+        display: inline-block;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
+        line-height: 1.25;
+        vertical-align: middle;
+      }
+
+      .finance-pending-container th:first-child,
+      .finance-pending-container td:first-child {
+        min-width: 240px;
+        width: 55%;
+        padding-right: 4px;
+      }
+
+      .finance-pending-container th:nth-child(2),
+      .finance-pending-container td:nth-child(2) {
+        width: 14%;
+      }
+
+      .finance-pending-container th:nth-child(3),
+      .finance-pending-container td:nth-child(3) {
+        width: 10%;
+      }
+
+      .finance-pending-container th:nth-child(4),
+      .finance-pending-container td:nth-child(4) {
+        width: 13%;
+      }
+
+      .finance-pending-container th:nth-child(5),
+      .finance-pending-container td:nth-child(5) {
+        width: 8%;
+        min-width: 110px;
+      }
+
+      .finance-hero {
+        backdrop-filter: blur(6px);
+      }
+
+      .finance-hero-highlight {
+        border: 1px solid rgba(228, 69, 11, 0.2);
+        box-shadow: 0 16px 30px rgba(228, 69, 11, 0.08);
+      }
+
+      .finance-quick-summary {
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 16px;
+        padding: 16px;
+        background: #fff;
+      }
+
+      .finance-card[data-summary-card] {
+        transition: box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+      }
+
+      .finance-card[data-summary-card]:hover {
+        box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
+        transform: translateY(-2px);
+        background-color: #fffaf5;
+      }
+
+      .finance-hero .finance-card:hover {
+        box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
+        transform: translateY(-2px);
+        background-color: #fffaf5;
+      }
+
+      .finance-section [data-summary-card] {
+        transition: box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+      }
+
+      .finance-section [data-summary-card]:hover {
+        box-shadow: 0 12px 20px rgba(15, 23, 42, 0.08);
+        transform: translateY(-2px);
+        background-color: #fffaf5;
+      }
+
+      .card-top-accent {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-top-accent::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+      }
+
+      .card-top-green::before {
+        background: linear-gradient(90deg, #16a34a, #34d399);
+      }
+
+      .card-top-amber::before {
+        background: linear-gradient(90deg, #d97706, #f59e0b);
+      }
+
+      .card-top-blue::before {
+        background: linear-gradient(90deg, #2563eb, #60a5fa);
+      }
+
+      .card-top-red::before {
+        background: linear-gradient(90deg, #e11d48, #fb7185);
+      }
+
+      .summary-modal-body {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .summary-modal-body::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+      }
+
+      #finance-summary-list li {
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+      }
+
+      .summary-accent-green #finance-summary-list li:hover {
+        background-color: #ecfdf5;
+        border-color: rgba(34, 197, 94, 0.25);
+      }
+
+      .summary-accent-amber #finance-summary-list li:hover {
+        background-color: #fff7ed;
+        border-color: rgba(234, 88, 12, 0.2);
+      }
+
+      .summary-accent-blue #finance-summary-list li:hover {
+        background-color: #eff6ff;
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+
+      .summary-accent-red #finance-summary-list li:hover {
+        background-color: #fff1f2;
+        border-color: rgba(244, 63, 94, 0.25);
+      }
+
+      .finance-hero .finance-card {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .finance-hero .finance-card-title {
+        min-height: 32px;
+        line-height: 1.2;
+      }
+
+      .finance-card-base {
+        box-shadow: 0 14px 26px rgba(15, 23, 42, 0.1);
+      }
+
+      .finance-hero .finance-card,
+      .finance-cards-base .finance-card {
+        min-height: 160px;
+      }
+
+      .finance-cards-base {
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      }
+
+      .finance-section-narrow {
+        width: calc(100% - 10px);
+        margin-right: auto;
+      }
+
+
+      #finance-dues-detail-list li {
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+      }
+
+      #finance-dues-detail-list li:hover {
+        background-color: #f8fafc;
+        border-color: rgba(148, 163, 184, 0.3);
+      }
+
+      .summary-accent-green .summary-modal-body::before {
+        background: linear-gradient(90deg, #16a34a, #34d399);
+      }
+
+      .summary-accent-amber .summary-modal-body::before {
+        background: linear-gradient(90deg, #d97706, #f59e0b);
+      }
+
+      .summary-accent-blue .summary-modal-body::before {
+        background: linear-gradient(90deg, #2563eb, #60a5fa);
+      }
+
+      .summary-accent-red .summary-modal-body::before {
+        background: linear-gradient(90deg, #e11d48, #fb7185);
+      }
+
+      @media (max-width: 640px) {
+        .finance-narrow {
+          width: 100%;
+          max-width: 360px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .finance-config {
+          max-width: 340px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .finance-main.mobile-narrow {
+          max-width: 400px;
+        }
+
+        .finance-card {
+          padding: 14px !important;
+          border-radius: 14px;
+        }
+
+        .finance-section {
+          padding: 16px !important;
+          border-radius: 16px;
+        }
+
+        .finance-section h2 {
+          font-size: 1.05rem;
+        }
+
+        #finance-payment-dialog {
+          width: 90vw;
+          max-width: 90vw;
+          border-radius: 16px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        #finance-pending-body .overflow-x-auto {
+          overflow-x: auto;
+        }
+
+        .finance-pending-container table {
+          table-layout: fixed;
+          width: 100%;
+          min-width: 560px;
+          font-size: 12px;
+        }
+
+        .finance-pending-container th,
+        .finance-pending-container td {
+          padding: 8px 6px;
+          white-space: nowrap;
+        }
+
+        .finance-pending-container th:nth-child(2),
+        .finance-pending-container td:nth-child(2) {
+          width: 17%;
+        }
+
+        .finance-pending-container th:nth-child(3),
+        .finance-pending-container td:nth-child(3) {
+          width: 11%;
+        }
+
+        .finance-pending-container th:nth-child(4),
+        .finance-pending-container td:nth-child(4) {
+          width: 15%;
+        }
+
+        .finance-pending-container th:nth-child(5),
+        .finance-pending-container td:nth-child(5) {
+          width: 12%;
+          min-width: 90px;
+        }
+
+        #finance-pending-table thead {
+          display: table-header-group;
+        }
+
+        #finance-pending-table tr {
+          display: table-row;
+          background: transparent;
+          box-shadow: none;
+          margin-bottom: 0;
+        }
+
+        #finance-pending-table td {
+          display: table-cell;
+          padding: 10px 8px;
+          font-size: 12px;
+          border-top: 1px solid #f1f5f9;
+        }
+
+        #finance-pending-table td::before {
+          content: "";
+          display: none;
+        }
+
+        #finance-pending-table tr[data-target] {
+          display: none;
+        }
+
+        #finance-pending-table tr[data-target]:not(.hidden) {
+          display: table-row;
+        }
+
+        /* Em mobile, volta a truncar o nome para evitar quebra/estouro */
+        .finance-pending-name {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+
+      @media (max-width: 1024px) {
+        #finance-pending-body {
+          max-width: 100%;
+        }
+      }
+
+    </style>
+</head>
+  <body class="bg-stadium text-secondary min-h-screen">
+    <header class="bg-secondary text-white shadow-sm sticky top-0 z-30">
+      <div class="max-w-6xl mx-auto px-4 py-4">
+        <div class="flex items-center justify-between gap-4">
+          <a href="dashboard.html" class="text-2xl font-bold text-primary">Amigos da Bola</a>
+          <div class="flex items-center gap-4">
+            <nav class="hidden md:flex items-center gap-4 text-sm font-semibold text-white">
+              <a class="hover:text-primary transition" href="dashboard.html">Painel</a>
+              <a class="hover:text-primary transition" href="members.html">Cadastros</a>
+              <a class="text-primary" href="finance.html" aria-current="page">Financeiro</a>
+              <a class="hover:text-primary transition" href="bar.html">Bar &amp; Belisco</a>
+              <a class="hover:text-primary transition" href="games.html">Jogos</a>
+              <a class="hover:text-primary transition" href="gallery.html">Galeria</a>
+              <a class="hover:text-primary transition" href="noticias.html">Notícias</a>
+            </nav>
+            <span id="finance-user-role" class="hidden text-xs font-medium bg-white/10 text-white px-3 py-1 rounded-full uppercase tracking-wide"></span>
+            <button
+              id="finance-logout-button"
+              class="hidden md:inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+              data-logout-button
+            >
+              Sair
+            </button>
+            <button
+              id="finance-menu-toggle"
+              type="button"
+              class="drawer-trigger inline-flex items-center justify-center px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-secondary transition md:hidden"
+              aria-controls="drawer-menu"
+              aria-expanded="false"
+            >
+              <span class="sr-only">Abrir navegação</span>
+              <svg data-icon="menu" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="4" ry="4" stroke="currentColor" fill="none" />
+                <line x1="8" y1="9" x2="16" y2="9" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+                <line x1="8" y1="15" x2="16" y2="15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="drawer-backdrop" class="drawer-backdrop md:hidden" aria-hidden="true"></div>
+    <aside id="drawer-menu" class="drawer-panel p-6 space-y-6 text-white md:hidden" aria-hidden="true">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-primary"></span>
+          <p class="drawer-title font-semibold text-white">Menu</p>
+        </div>
+        <button
+          id="drawer-close"
+          type="button"
+          class="drawer-close text-white/70 hover:text-white transition text-lg leading-none"
+          aria-label="Fechar menu"
+        >
+          &times;
+        </button>
+      </div>
+      <nav>
+        <ul class="drawer-nav text-sm font-semibold">
+          <li>
+            <a class="block hover:text-primary transition" href="dashboard.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2" ry="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7" y1="20" x2="17" y2="20"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+              Painel
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="members.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Cadastros
+            </a>
+          </li>
+          <li>
+            <a class="block text-primary transition" href="finance.html" aria-current="page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Financeiro
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="bar.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-1 7a5 5 0 0 1-5 4H12a5 5 0 0 1-5-4Z"/><path d="M5 3h14"/><path d="M10 18h4"/><path d="M9 21h6"/></svg>
+              Bar &amp; Belisco
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="games.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+              Jogos
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="gallery.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 15-3.5-3.5a2.1 2.1 0 0 0-3 0L9 18"/></svg>
+              Galeria
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="noticias.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h2"/><path d="M5 13V5c0-.6.4-1 1-1h9"/><path d="M8 21h8"/><path d="M12 17V3h4l4 4v10c0 .6-.4 1-1 1h-7"/><path d="M6 17v-2"/></svg>
+              Notícias
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <button
+        class="w-full px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+        data-logout-button
+      >
+        Sair
+      </button>
+    </aside>
+
+    <main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 mobile-narrow finance-main">
+      <nav class="text-xs text-slate-500 flex items-center gap-2 mb-2" aria-label="Breadcrumb">
+        <a href="dashboard.html" class="hover:text-primary">Painel</a>
+        <span>/</span>
+        <span class="text-secondary font-semibold">Financeiro</span>
+      </nav>
+      <section class="grid lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-5 sm:space-y-6 finance-narrow">
+          <div class="rounded-2xl border border-primary/15 bg-white/70 p-4 sm:p-5 shadow-sm finance-hero">
+            <div class="grid sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
+            <div
+              class="rounded-xl bg-white shadow p-4 sm:p-5 finance-card card-top-accent card-top-blue cursor-pointer hover:shadow-md transition"
+              data-summary-card="previous-balance"
+              role="button"
+              tabindex="0"
+            >
+              <span class="block uppercase tracking-wide text-[11px] text-slate-500 finance-card-title">Saldo mês de <span id="finance-previous-balance-month">--</span></span>
+              <strong class="block text-xl sm:text-2xl" id="finance-previous-balance">R$ --</strong>
+              <p class="text-[11px] text-slate-500 mt-2">Saldo de fechamento do mês anterior.</p>
+            </div>
+            <div
+              class="rounded-xl bg-white shadow p-4 sm:p-5 finance-card finance-hero-highlight cursor-pointer hover:shadow-md transition card-top-accent card-top-amber"
+              data-summary-card="total-received"
+              role="button"
+              tabindex="0"
+            >
+              <span class="block uppercase tracking-wide text-[11px] text-slate-500 finance-card-title">Total de mensalidades recebidas no mês</span>
+              <strong class="block text-xl text-primary sm:text-2xl" id="finance-total-received">R$ --</strong>
+              <p class="text-[11px] text-slate-500 mt-1 font-semibold" id="finance-total-received-count">0 mensalidades recebidas</p>
+            </div>
+            <div
+              class="rounded-xl bg-white shadow p-4 sm:p-5 finance-card cursor-pointer hover:shadow-md transition card-top-accent card-top-amber"
+              data-summary-card="pending-total"
+              role="button"
+              tabindex="0"
+            >
+              <span class="block uppercase tracking-wide text-[11px] text-slate-500 finance-card-title">Mensalidades pendentes no mês</span>
+              <strong class="block text-xl text-amber-500 sm:text-2xl" id="finance-total-pending">R$ --</strong>
+              <p class="text-[11px] text-slate-500 mt-1 font-semibold" id="finance-total-pending-count">0 mensalidades pendentes</p>
+            </div>
+            <div
+              class="rounded-xl bg-white shadow p-4 sm:p-5 finance-card cursor-pointer hover:shadow-md transition card-top-accent card-top-blue"
+              data-summary-card="cash-month"
+              role="button"
+              tabindex="0"
+            >
+              <span class="block uppercase tracking-wide text-[11px] text-slate-500 finance-card-title">Saldo do mês de <span id="finance-cash-balance-month">--</span></span>
+              <strong class="block text-xl text-secondary sm:text-2xl" id="finance-cash-balance">R$ --</strong>
+              <p class="text-[11px] text-slate-500 mt-2">Mensalidades do mês atual + mensalidades adiantadas.</p>
+            </div>
+            </div>
+          </div>
+
+          <div class="finance-cards-base">
+            <div class="grid sm:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
+              <div
+                class="rounded-xl bg-white shadow p-4 sm:p-5 border border-slate-200 finance-card finance-card-base cursor-pointer hover:shadow-md transition card-top-accent card-top-green"
+                data-summary-card="entries"
+                role="button"
+                tabindex="0"
+              >
+              <span class="block uppercase tracking-wide text-[11px] text-slate-500">Outras entradas</span>
+              <strong class="block text-xl text-secondary sm:text-2xl" id="overall-total-revenue">R$ 0,00</strong>
+              <p class="text-[11px] text-slate-500 mt-2">Entradas diversas mês atual.</p>
+              </div>
+              <div
+                class="rounded-xl bg-white shadow p-4 sm:p-5 border border-slate-200 finance-card finance-card-base cursor-pointer hover:shadow-md transition card-top-accent card-top-red"
+                data-summary-card="expenses"
+                role="button"
+                tabindex="0"
+              >
+              <span class="block uppercase tracking-wide text-[11px] text-slate-500">Despesas gerais</span>
+              <strong class="block text-xl text-secondary sm:text-2xl" id="overall-total-expense">R$ 0,00</strong>
+              <p class="text-[11px] text-slate-500 mt-2">Despesas gerais registradas no sistema.</p>
+              </div>
+              <div
+                class="rounded-xl bg-white shadow p-4 sm:p-5 border border-slate-200 finance-card finance-card-base cursor-pointer hover:shadow-md transition card-top-accent card-top-blue"
+                data-summary-card="balance"
+                role="button"
+                tabindex="0"
+              >
+              <span class="block uppercase tracking-wide text-[11px] text-slate-500">Saldo geral</span>
+              <strong class="block text-xl text-primary sm:text-2xl" id="overall-total-balance">R$ 0,00</strong>
+              <p class="text-[11px] text-slate-500 mt-2">Caixa até o momento (excluído o bar).</p>
+              </div>
+              <div
+                class="rounded-xl bg-white shadow p-4 sm:p-5 border border-slate-200 finance-card finance-card-base cursor-pointer hover:shadow-md transition card-top-accent card-top-amber"
+                data-summary-card="bar"
+                role="button"
+                tabindex="0"
+              >
+              <span class="block uppercase tracking-wide text-[11px] text-slate-500">Saldo do bar</span>
+              <strong class="block text-xl text-secondary sm:text-2xl" id="bar-total-balance">R$ 0,00</strong>
+              <p class="text-[11px] text-slate-500 mt-2">Entradas do bar menos as saídas.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow p-6 finance-section space-y-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 class="text-lg font-semibold sm:text-xl">Pagamentos recebidos</h2>
+                <p class="text-xs text-slate-500 sm:text-sm">Recebimentos das mensalidades do mês, incluindo adiantamentos.</p>
+                <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
+                  <span id="finance-receipts-count">0 pagamentos</span>
+                  <span id="finance-receipts-total">R$ 0,00</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                id="finance-receipts-toggle"
+                class="list-toggle-button inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-xs font-semibold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                aria-expanded="false"
+              >
+                Abrir lista
+              </button>
+            </div>
+            <div id="finance-receipts-body" class="hidden space-y-2">
+              <div id="finance-receipts-empty" class="text-xs text-slate-500">Nenhum recebimento registrado.</div>
+              <input
+                type="search"
+                id="finance-receipts-search"
+                placeholder="Buscar sócio ou competência..."
+                class="w-full sm:w-64 rounded-md border border-slate-300 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <ul id="finance-receipts-list" class="divide-y divide-slate-100"></ul>
+              <div class="flex flex-wrap items-center justify-end gap-3 pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  id="finance-receipts-back-top"
+                  class="text-xs font-semibold text-secondary hover:text-primary transition"
+                >
+                  Voltar ao topo
+                </button>
+                <button
+                  type="button"
+                  id="finance-receipts-close"
+                  class="text-xs font-semibold text-rose-500 hover:text-rose-600 transition"
+                >
+                  Fechar lista
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <section class="bg-white rounded-xl shadow p-6 finance-section space-y-4">
+            <div>
+              <h2 class="text-lg font-semibold sm:text-xl">Visão financeira do mês</h2>
+              <p class="text-xs text-slate-500 sm:text-sm">
+                Acompanhe composição de receitas, comparação com despesas e saldo recente.
+              </p>
+            </div>
+            <div class="grid gap-4 lg:grid-cols-3">
+              <div class="border border-slate-200 rounded-xl p-4">
+                <p class="text-xs uppercase text-slate-500 text-center">Receitas por origem</p>
+                <div class="relative h-40 mt-3">
+                  <canvas id="finance-revenue-composition" class="absolute inset-0"></canvas>
+                </div>
+              </div>
+              <div class="border border-slate-200 rounded-xl p-4">
+                <p class="text-xs uppercase text-slate-500 text-center">Receitas x despesas</p>
+                <div class="relative h-40 mt-3">
+                  <canvas id="finance-revenue-expense" class="absolute inset-0"></canvas>
+                </div>
+              </div>
+              <div class="border border-slate-200 rounded-xl p-4">
+                <p class="text-xs uppercase text-slate-500 text-center">Saldo últimos 6 meses</p>
+                <div class="relative h-40 mt-3">
+                  <canvas id="finance-balance-line" class="absolute inset-0"></canvas>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="bg-white rounded-xl shadow p-6 finance-section space-y-3">
+            <div>
+              <h2 class="text-lg font-semibold sm:text-xl">Registrar recebimento</h2>
+              <p class="text-xs text-slate-500">
+                Receba mensalidades diretamente pelo painel financeiro ou registre parcelas em atraso.
+              </p>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+              <button
+                id="open-payment-modal"
+                class="self-start sm:self-end inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-[#d41515] hover:shadow-md transition"
+              >
+                Registrar recebimento
+              </button>
+            </div>
+          </div>
+
+
+          <div class="bg-white rounded-xl shadow p-6 finance-section space-y-4">
+            <div class="space-y-3">
+              <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                <div>
+                  <h2 class="text-lg font-semibold sm:text-xl">Mensalidades pendentes</h2>
+                  <p class="text-xs text-slate-500 sm:text-sm">
+                    Pesquise por nome ou mês para priorizar cobranças.
+                  </p>
+                  <p class="text-xs text-slate-500">
+                    Considera pendente quando não há registro de pagamento ou o status não foi quitado/isento.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="finance-pending-toggle"
+                  class="list-toggle-button inline-flex items-center justify-center gap-2 md:self-start self-stretch rounded-md border px-4 py-2 text-xs font-semibold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                  aria-expanded="false"
+                >
+                  Abrir lista
+                </button>
+              </div>
+            </div>
+  <div id="finance-pending-body" class="space-y-4 hidden relative">
+  <input
+    type="search"
+    id="finance-pending-search"
+    placeholder="Buscar por nome ou competência..."
+    class="w-full rounded-md border border-slate-300 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+  />
+
+  <!-- 📊 Tabela responsiva de pendências -->
+  <div class="finance-pending-container overflow-x-auto overflow-y-visible block w-full max-w-none px-2 pb-3 scrollbar-thin scrollbar-thumb-primary/40 scrollbar-track-slate-100">
+    <table class="w-full table-auto divide-y divide-slate-200 text-xs sm:text-sm">
+      <thead class="bg-slate-50 text-xs uppercase text-slate-500 sticky top-0 z-10">
+        <tr>
+          <th class="px-4 py-3 text-left w-48">Sócio</th>
+          <th class="px-4 py-3 text-left w-28">Pendências</th>
+          <th class="px-4 py-3 text-right w-24">Valor</th>
+          <th class="px-4 py-3 text-left">Referência</th>
+          <th class="py-3 pr-6 text-right whitespace-nowrap">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="finance-pending-table" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
+    </table>
+  </div>
+
+  <div id="finance-pending-empty" class="text-center text-sm text-slate-500 py-8 hidden">
+    Não há pendências.
+  </div>
+  <div class="flex flex-wrap items-center justify-end gap-3 pt-2 border-t border-slate-200">
+    <button
+      type="button"
+      id="finance-pending-back-top"
+      class="text-xs font-semibold text-secondary hover:text-primary transition"
+    >
+      Voltar ao topo
+    </button>
+    <button
+      type="button"
+      id="finance-pending-close"
+      class="text-xs font-semibold text-rose-500 hover:text-rose-600 transition"
+    >
+      Fechar lista
+    </button>
+  </div>
+</div>
+
+          </div>
+
+        </div>
+
+        <aside class="bg-white rounded-xl shadow p-6 finance-section space-y-6 lg:max-w-sm finance-config">
+          <section class="space-y-3 finance-quick-summary">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold">Resumo rápido</h2>
+              <span class="text-[11px] uppercase tracking-wide text-slate-400">Mensalidades</span>
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-sm font-semibold text-slate-700">Configuração de mensalidade</h3>
+              <p class="text-xs text-slate-500">
+                Valor aplicado por padrão a administradores, diretores e sócios. Visitantes são isentos, salvo exceções.
+              </p>
+              <form id="finance-fee-form" class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium mb-1" for="finance-fee-value">Mensalidade (R$)</label>
+                  <input
+                    type="text"
+                    id="finance-fee-value"
+                    inputmode="decimal"
+                    value="30,00"
+                    class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="w-full px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+                >
+                  Atualizar mensalidade
+                </button>
+              </form>
+              <div id="finance-fee-feedback" class="text-xs text-slate-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-sm font-semibold text-slate-700">Mensalidades do mês</h3>
+              <p class="text-[11px] text-slate-500">Recebidas, pendentes e isentas.</p>
+              <div class="relative h-36">
+                <canvas id="finance-dues-chart" class="absolute inset-0"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <section class="space-y-3">
+            <h2 class="text-xl font-semibold">Resumo por perfil</h2>
+            <ul id="finance-breakdown" class="space-y-2 text-sm text-slate-600"></ul>
+            <div id="finance-breakdown-empty" class="text-xs text-slate-500">
+              Os dados serão exibidos após registrar movimentações financeiras.
+            </div>
+          </section>
+
+          <section class="space-y-3">
+            <h2 class="text-xl font-semibold">Relatórios</h2>
+            <ul class="space-y-2 text-sm">
+              <li class="flex items-center justify-between">
+                <span>Exportar sócios ativos</span>
+                <button
+                  id="export-active-members"
+                  class="text-secondary hover:text-primary transition text-xs font-medium"
+                >
+                  Exportar XLS
+                </button>
+              </li>
+              <li class="flex items-center justify-between">
+                <span>Exportar pendências</span>
+                <button
+                  id="export-pending-payments"
+                  class="text-secondary hover:text-primary transition text-xs font-medium"
+                >
+                  Exportar XLS
+                </button>
+              </li>
+            </ul>
+          </section>
+
+        </aside>
+      </section>
+
+      <section class="bg-white rounded-xl shadow p-6 finance-section space-y-6 finance-section-narrow">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-semibold sm:text-xl">Arrecadações e despesas do Clube</h2>
+            <p class="text-xs text-slate-500 sm:text-sm">
+              Registre mensalidades extras, doações e gastos administrativos para manter o balanço geral do clube atualizado.
+            </p>
+          </div>
+          <button
+            type="button"
+            id="general-section-toggle"
+            class="list-toggle-button inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-xs font-semibold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            aria-expanded="false"
+          >
+            Abrir
+          </button>
+        </div>
+
+        <div id="general-section-body" class="hidden space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs sm:text-sm lg:gap-6">
+          <div
+            class="rounded-xl border border-slate-200 bg-stadium px-4 py-3 cursor-pointer hover:shadow-sm transition card-top-accent card-top-green"
+            data-summary-card="general-revenue"
+            role="button"
+            tabindex="0"
+          >
+            <p class="text-xs uppercase text-slate-500">Receitas (mensalidades e extras)</p>
+            <p id="general-summary-revenue" class="text-lg font-semibold text-secondary">R$ 0,00</p>
+            <p class="text-[11px] text-slate-500 mt-1">
+              Mensalidades: <span id="general-summary-dues" class="font-semibold text-primary">R$ 0,00</span>
+            </p>
+          </div>
+          <div
+            class="rounded-xl border border-slate-200 bg-stadium px-4 py-3 cursor-pointer hover:shadow-sm transition card-top-accent card-top-red"
+            data-summary-card="general-expense"
+            role="button"
+            tabindex="0"
+          >
+            <p class="text-xs uppercase text-slate-500">Despesas do clube</p>
+            <p id="general-summary-expense" class="text-lg font-semibold text-secondary">R$ 0,00</p>
+          </div>
+          <div
+            class="rounded-xl border border-slate-200 bg-stadium px-4 py-3 cursor-pointer hover:shadow-sm transition card-top-accent card-top-blue"
+            data-summary-card="general-balance"
+            role="button"
+            tabindex="0"
+          >
+            <p class="text-xs uppercase text-slate-500">Saldo</p>
+            <p id="general-summary-balance" class="text-lg font-semibold text-secondary">R$ 0,00</p>
+          </div>
+          </div>
+
+          <form id="general-transaction-form" class="space-y-3 text-sm">
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label class="space-y-1">
+              <span class="font-medium text-slate-600">Data</span>
+              <input
+                type="text"
+                id="general-transaction-date"
+                lang="pt-BR"
+                required
+                placeholder="dd/mm/aaaa"
+                inputmode="numeric"
+                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p class="text-[11px] text-slate-500">Formato: dia/mês/ano.</p>
+            </label>
+            <label class="space-y-1">
+              <span class="font-medium text-slate-600">Tipo</span>
+              <select
+                id="general-transaction-type"
+                required
+                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Selecione</option>
+                <option value="entrada">Entrada</option>
+                <option value="saida">Saída</option>
+              </select>
+            </label>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label class="space-y-1">
+              <span class="font-medium text-slate-600">Categoria</span>
+              <select
+                id="general-transaction-category"
+                required
+                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Selecione</option>
+                <option value="operacional">Operacional</option>
+                <option value="evento">Evento</option>
+                <option value="infraestrutura">Infraestrutura</option>
+                <option value="servico">Serviços</option>
+                <option value="joia">Jóia</option>
+                <option value="outros">Outros</option>
+              </select>
+            </label>
+            <label class="space-y-1">
+              <span class="font-medium text-slate-600">Valor (R$)</span>
+              <input
+                type="text"
+                inputmode="decimal"
+                id="general-transaction-amount"
+                required
+                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+          </div>
+          <label class="space-y-1 text-sm">
+            <span class="font-medium text-slate-600">Descrição</span>
+            <input
+              type="text"
+              id="general-transaction-description"
+              placeholder="Ex.: Serviço de arbitragem, compra de materiais, rifas..."
+              class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </label>
+          <label class="space-y-1 text-sm">
+            <span class="font-medium text-slate-600">Observações</span>
+            <input
+              type="text"
+              id="general-transaction-notes"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </label>
+          <label class="space-y-1 text-sm">
+            <span class="font-medium text-slate-600">Comprovante (opcional)</span>
+            <div class="relative">
+              <div
+                class="flex items-center justify-between gap-3 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-500 cursor-pointer hover:border-slate-400 transition"
+              >
+                <span class="font-medium text-slate-700">Escolher arquivo</span>
+                <span id="general-transaction-receipt-label" class="text-xs text-slate-400">Nenhum arquivo selecionado</span>
+              </div>
+              <input
+                type="file"
+                id="general-transaction-receipt"
+                accept="image/*,.pdf"
+                class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </div>
+            <span class="text-[11px] text-slate-500">Aceita PDF ou imagem até 10 MB.</span>
+          </label>
+          <div id="general-transaction-feedback" class="text-xs text-slate-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+          <button
+            type="submit"
+            class="w-full px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-black transition"
+          >
+            Registrar movimentação
+          </button>
+          </form>
+
+          <div class="space-y-3 text-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+            <label class="flex items-center gap-2 text-slate-600">
+              <span class="font-semibold">Filtrar mês</span>
+              <select
+                id="general-transactions-month"
+                class="rounded-md border border-slate-300 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Todos</option>
+              </select>
+            </label>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[720px] divide-y divide-slate-200 text-xs sm:text-sm" id="general-transactions-table">
+              <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                <tr>
+                  <th class="px-4 py-3 text-left">Ações</th>
+                  <th class="px-4 py-3 text-left">Data</th>
+                  <th class="px-4 py-3 text-left">Tipo</th>
+                  <th class="px-4 py-3 text-left">Categoria</th>
+                  <th class="px-4 py-3 text-left">Descrição</th>
+                  <th class="px-4 py-3 text-left">Valor</th>
+                  <th class="px-4 py-3 text-left">Observação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-xs sm:text-sm whitespace-nowrap"></tbody>
+            </table>
+          </div>
+          <div id="general-transactions-empty" class="text-xs text-slate-500 py-4 text-center">
+            Nenhuma movimentação registrada.
+          </div>
+          </div>
+          <div class="flex flex-wrap items-center justify-end gap-3 pt-2 border-t border-slate-200">
+            <button
+              type="button"
+              id="general-section-close"
+              class="text-xs font-semibold text-rose-500 hover:text-rose-600 transition"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="finance-payment-dialog" class="p-0 rounded-xl shadow-2xl max-w-xl w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="finance-payment-form">
+        <input type="hidden" id="finance-payment-id" />
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold">Registrar mensalidade</h3>
+            <p class="text-xs text-slate-500" id="finance-payment-helper">Preencha os dados para registrar o recebimento.</p>
+          </div>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div id="finance-payment-feedback" class="hidden rounded-md border px-3 py-2 text-xs" role="status" aria-live="polite" data-feedback></div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="finance-member-select">Sócio</label>
+            <select
+              id="finance-member-select"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            ></select>
+            <p id="finance-member-summary" class="mt-1 text-xs text-slate-500"></p>
+          </div>
+            <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1" for="finance-payment-month">Competência</label>
+              <div class="relative">
+                <input
+                  type="date"
+                  id="finance-payment-month"
+                  lang="pt-BR"
+                  required
+                  min="2026-01-01"
+                  placeholder="dd/mm/aaaa"
+                  class="date-pt-input w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <span
+                  data-display-for="finance-payment-month"
+                  class="date-pt-display pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-secondary/80"
+                >
+                  dd/mm/aaaa
+                </span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="finance-payment-status">Status</label>
+              <select
+                id="finance-payment-status"
+                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="pago">Pago</option>
+                <option value="pendente">Pendente</option>
+                <option value="isentado">Isentado</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1" for="finance-payment-amount">Valor (R$)</label>
+              <input
+                type="text"
+                inputmode="decimal"
+                id="finance-payment-amount"
+                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="finance-payment-notes">Observação</label>
+              <input
+                type="text"
+                id="finance-payment-notes"
+                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515]">
+            Salvar
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="finance-delete-receipt-dialog" class="p-0 rounded-xl shadow-2xl max-w-md w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="finance-delete-receipt-form">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Excluir pagamento</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-5 space-y-2 text-sm text-slate-600">
+          <p>Tem certeza que deseja excluir este pagamento?</p>
+          <p class="text-xs text-slate-500" id="finance-delete-receipt-summary">Essa ação estorna o valor e restaura a pendência.</p>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-rose-500 text-white text-sm font-medium hover:bg-rose-600">
+            Excluir
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="finance-delete-general-dialog" class="p-0 rounded-xl shadow-2xl max-w-md w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="finance-delete-general-form">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Excluir movimentação</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-5 space-y-2 text-sm text-slate-600">
+          <p>Tem certeza que deseja excluir este lançamento?</p>
+          <p class="text-xs text-slate-500" id="finance-delete-general-summary">Essa ação remove o lançamento do saldo.</p>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-rose-500 text-white text-sm font-medium hover:bg-rose-600">
+            Excluir
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="finance-summary-dialog" class="p-0 rounded-xl shadow-2xl max-w-md w-full summary-modal" aria-modal="true">
+      <div class="bg-white rounded-xl overflow-hidden summary-modal-body">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold" id="finance-summary-title">Resumo</h3>
+            <p class="text-xs text-slate-500" id="finance-summary-subtitle"></p>
+          </div>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-5 space-y-2 text-sm text-slate-600">
+          <p id="finance-summary-description"></p>
+          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+            <span class="text-xs uppercase tracking-wide text-slate-400">Valor atual</span>
+            <p class="text-xl font-semibold text-secondary" id="finance-summary-value">R$ 0,00</p>
+          </div>
+          <p id="finance-summary-empty" class="text-xs text-slate-500 hidden">Sem valores detalhados.</p>
+          <ul id="finance-summary-list" class="space-y-2 max-h-56 overflow-y-auto pr-1 text-xs text-slate-600"></ul>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="finance-dues-detail-dialog" class="p-0 rounded-xl shadow-2xl max-w-md w-full summary-modal" aria-modal="true">
+      <div class="bg-white rounded-xl overflow-hidden summary-modal-body">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold" id="finance-dues-detail-title">Mensalidades do mês</h3>
+            <p class="text-xs text-slate-500" id="finance-dues-detail-subtitle"></p>
+          </div>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-5 space-y-2 text-sm text-slate-600">
+          <p id="finance-dues-detail-description"></p>
+          <p id="finance-dues-detail-empty" class="text-xs text-slate-500 hidden">Sem registros para exibir.</p>
+          <ul id="finance-dues-detail-list" class="space-y-2 max-h-64 overflow-y-auto pr-1 text-xs text-slate-600"></ul>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <script type="module">
+  import { getFirebaseAuth } from "./scripts/firebase-client.js";
+  const auth = getFirebaseAuth();
+  const INACTIVITY_LIMIT_MINUTES = 15; // ⏱ tempo máximo de inatividade (ajustável)
+  let inactivityTimer;
+
+  function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(async () => {
+      const user = auth.currentUser;
+      if (user) {
+        await signOut(auth);
+        alert("Sua sessão expirou por inatividade. Faça login novamente.");
+        window.location.href = "login.html"; // 🔐 ajuste conforme o nome da sua tela de login
+      }
+    }, INACTIVITY_LIMIT_MINUTES * 60 * 1000);
+  }
+
+  // Eventos que resetam o contador de inatividade
+  ["mousemove", "keydown", "click", "scroll", "touchstart"].forEach(event => {
+    window.addEventListener(event, resetInactivityTimer);
+  });
+
+  // Inicia o temporizador ao carregar
+  resetInactivityTimer();
+
+  // 🔒 Refresca sessão se aba estiver oculta e reaberta após longo tempo
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      const lastActive = Number(localStorage.getItem("lastActive")) || 0;
+      const now = Date.now();
+      const diffMinutes = (now - lastActive) / 1000 / 60;
+      if (diffMinutes > INACTIVITY_LIMIT_MINUTES) {
+        signOut(auth).then(() => {
+          alert("Sua sessão expirou. Faça login novamente.");
+          window.location.href = "login.html";
+        });
+      }
+    } else {
+      localStorage.setItem("lastActive", Date.now());
+    }
+  });
+</script>
+
+    <footer class="bg-secondary text-white">
+      <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-6 text-sm">
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Nossa missão</h3>
+          <p class="text-white/80">
+            Promover o futebol amador com organização, convivência saudável e oportunidades para todas as idades.
+          </p>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Contato</h3>
+          <ul class="space-y-1 text-white/80">
+            <li>WhatsApp: <span data-copy="(18) 99801-9407">(18) 99801-9407</span></li>
+            <li>Email: <span data-copy="contato@amigosdabola.club">contato@amigosdabola.club</span></li>
+            <li>Endereço: <a class="hover:text-primary transition" href="https://www.google.com/maps/search/?api=1&query=Rodavia+Marechal+Rondon+Km+614+-+Guara%C3%A7a%C3%AD/SP" target="_blank" rel="noopener noreferrer">Rodavia Marechal Rondon Km 614 - Guaraçaí/SP</a></li>
+          </ul>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Transparência</h3>
+          <p class="text-white/80">
+            Acesse relatórios financeiros, sócios ativos e histórico de eventos na área restrita do sistema.
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-white/10 py-4 text-center text-xs text-white/60">
+        &copy; <span id="copyright-year"></span> Amigos da Bola. Todos os direitos reservados.
+      </div>
+    </footer>
+
+    <script src="./scripts/footer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+     <script type="module" src="./scripts/finance.js?v=2"></script>
+    <script type="module" src="./scripts/firebase-client.js"></script>
+
+  </body>
+</html>

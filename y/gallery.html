@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Galeria de Sócios • Amigos da Bola</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon-square-180.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>(function(){const originalWarn=console.warn;console.warn=(...args)=>{if(args.some(arg=>typeof arg==="string" && arg.includes("cdn.tailwindcss.com should not be used in production"))) return;originalWarn.apply(console,args);};})();</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwind-config.js"></script>
+    <link rel="stylesheet" href="assets/theme.css" />
+</head>
+  <body class="bg-stadium text-secondary min-h-screen">
+    <header class="bg-secondary text-white shadow-sm sticky top-0 z-20">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <a href="index.html" class="text-2xl font-bold text-primary">Amigos da Bola</a>
+        <a
+          href="index.html"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-white text-sm font-semibold hover:bg-[#d41515] transition"
+        >
+          Voltar
+        </a>
+      </div>
+    </header>
+
+
+    <main class="max-w-6xl mx-auto px-4 py-10 space-y-10 mobile-narrow">
+      <nav class="text-xs text-slate-500 flex items-center gap-2 mb-2" aria-label="Breadcrumb">
+        <a href="index.html" class="hover:text-primary">Início</a>
+        <span>/</span>
+        <span class="text-secondary font-semibold">Galeria</span>
+      </nav>
+      <section class="space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-semibold">Galeria de sócios</h1>
+            <p class="text-sm text-slate-600">
+              Conheça quem veste a camisa do Amigos da Bola. A lista é atualizada automaticamente conforme novos cadastros.
+            </p>
+          </div>
+          <span class="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold">
+            Total: <strong id="gallery-count" class="text-secondary text-base">--</strong>
+          </span>
+        </div>
+        <div id="gallery-feedback" class="text-sm text-slate-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+        <div
+          id="gallery-grid"
+          class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          aria-live="polite"
+        ></div>
+      </section>
+    </main>
+
+    <dialog id="login-dialog" class="p-0 rounded-xl shadow-2xl max-w-sm w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="login-form">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Acesso restrito</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="login-email">Email</label>
+            <input
+              id="login-email"
+              type="email"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="login-password">Senha</label>
+            <input
+              id="login-password"
+              type="password"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <p class="text-xs text-slate-500">Administradores podem gerar senhas provisórias na página de cadastros.</p>
+          <div id="login-feedback" class="text-xs text-rose-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515]">
+            Entrar
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="reset-dialog" class="p-0 rounded-xl shadow-2xl max-w-sm w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="reset-form">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Recuperar acesso</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <p class="text-sm text-slate-600">
+            Informe o seu email para receber um link seguro de redefinição de senha.
+          </p>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="reset-email">Email</label>
+            <input
+              id="reset-email"
+              type="email"
+              required
+              autocomplete="username"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div id="reset-feedback" class="text-xs text-slate-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+          <p class="text-xs text-slate-500">
+            Caso o email caia no spam, marque como "Não é spam" para que futuras mensagens cheguem na caixa de entrada.
+          </p>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button
+            type="button"
+            data-action="close"
+            class="px-4 py-2 rounded-md border border-slate-300 text-sm transition hover:border-slate-400 hover:bg-white"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium transition hover:bg-[#d41515] hover:shadow-md"
+          >
+            Enviar link
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="profile-modal" class="p-0 rounded-xl shadow-2xl max-w-md w-full" aria-modal="true">
+      <article class="bg-white rounded-xl overflow-hidden">
+        <img id="profile-modal-photo" class="w-full h-56 object-cover bg-slate-200" alt="Foto do sócio" loading="lazy" />
+        <div class="p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 id="profile-modal-name" class="text-xl font-semibold text-secondary"></h2>
+            <span id="profile-modal-role" class="px-2 py-1 text-xs font-semibold rounded-full bg-primary/10 text-primary uppercase tracking-wide"></span>
+          </div>
+          <dl class="space-y-2 text-sm text-slate-600">
+            <div>
+              <dt class="font-medium">Telefone</dt>
+              <dd id="profile-modal-phone">--</dd>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <dt class="font-medium">Nascimento</dt>
+                <dd id="profile-modal-birth">--</dd>
+              </div>
+              <div>
+                <dt class="font-medium">Desde</dt>
+                <dd id="profile-modal-join">--</dd>
+              </div>
+            </div>
+          </dl>
+          <button
+            type="button"
+            data-action="close"
+            class="w-full px-4 py-2 rounded-md border border-slate-300 text-sm hover:border-primary transition"
+          >
+            Fechar
+          </button>
+        </div>
+      </article>
+    </dialog>
+
+    <footer class="bg-secondary text-white mt-10">
+      <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-6 text-sm">
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Nossa missão</h3>
+          <p class="text-white/80">
+            Promover o futebol amador com organização, convivência saudável e oportunidades para todas as idades.
+          </p>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Contato</h3>
+          <ul class="space-y-1 text-white/80">
+            <li>WhatsApp: <span data-copy="(18) 99801-9407">(18) 99801-9407</span></li>
+            <li>Email: <span data-copy="contato@amigosdabola.club">contato@amigosdabola.club</span></li>
+            <li>Endereço: <a class="hover:text-primary transition" href="https://www.google.com/maps/search/?api=1&query=Rodavia+Marechal+Rondon+Km+614+-+Guara%C3%A7a%C3%AD/SP" target="_blank" rel="noopener noreferrer">Rodavia Marechal Rondon Km 614 - Guaraçaí/SP</a></li>
+          </ul>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Transparência</h3>
+          <p class="text-white/80">
+            Acesse relatórios financeiros, sócios ativos e histórico de eventos na área restrita do sistema.
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-white/10 py-4 text-center text-xs text-white/60">
+        &copy; <span id="copyright-year"></span> Amigos da Bola. Todos os direitos reservados.
+      </div>
+    </footer>
+
+    <script src="./scripts/footer.js"></script>
+<script type="module" src="./scripts/firebase-client.js"></script>
+<script type="module" src="./scripts/gallery.js"></script>
+
+  </body>
+</html>

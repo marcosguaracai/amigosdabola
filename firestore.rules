@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function hasRole(roles) {
+      return isAuthenticated() && request.auth.token.role in roles;
+    }
+
+    match /news/{id} {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'imprensa']);
+    }
+
+    match /blogPosts/{id} {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'imprensa']);
+    }
+
+    match /events/{id} {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'diretor']);
+    }
+
+    // Financeiro: apenas admin/financeiro podem criar/editar/excluir movimentacoes e ajustes.
+    match /settings/finance {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'financeiro']);
+    }
+
+    match /generalTransactions/{id} {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'financeiro']);
+    }
+
+    match /payments/{id} {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'financeiro']);
+    }
+
+    match /members/{memberId}/payments/{competence} {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'financeiro']);
+    }
+
+    // Bar e Belisco: apenas admin/financeiro podem criar/editar/excluir movimentacoes e ajustes.
+    match /settings/bar {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'financeiro']);
+    }
+
+    match /barTransactions/{id} {
+      allow read: if true;
+      allow write: if hasRole(['admin', 'financeiro']);
+    }
+
+    // Demais coleções mantêm regra padrão: leitura liberada, escrita apenas autenticados.
+    match /{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+  }
+}

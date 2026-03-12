@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadastros • Amigos da Bola</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon-square-180.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>(function(){const originalWarn=console.warn;console.warn=(...args)=>{if(args.some(arg=>typeof arg==="string" && arg.includes("cdn.tailwindcss.com should not be used in production"))) return;originalWarn.apply(console,args);};})();</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwind-config.js"></script>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <style>
+      dialog::backdrop {
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(6px);
+      }
+
+      dialog[open] {
+        animation: modal-fade-in 0.26s ease;
+      }
+
+      @keyframes modal-fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      
+    </style>
+</head>
+  <body class="bg-stadium text-secondary min-h-screen">
+    <header class="bg-secondary text-white shadow-sm sticky top-0 z-30">
+      <div class="max-w-6xl mx-auto px-4 py-4">
+        <div class="flex items-center justify-between gap-4">
+          <a href="dashboard.html" class="text-2xl font-bold text-primary">Amigos da Bola</a>
+          <div class="flex items-center gap-4">
+            <nav class="hidden md:flex items-center gap-4 text-sm font-semibold text-white">
+              <a class="hover:text-primary transition" href="dashboard.html">Painel</a>
+              <a class="text-primary" href="members.html" aria-current="page">Cadastros</a>
+              <a class="hover:text-primary transition" href="finance.html">Financeiro</a>
+              <a class="hover:text-primary transition" href="bar.html">Bar &amp; Belisco</a>
+              <a class="hover:text-primary transition" href="games.html">Jogos</a>
+              <a class="hover:text-primary transition" href="gallery.html">Galeria</a>
+              <a class="hover:text-primary transition" href="noticias.html">Notícias</a>
+            </nav>
+            <span id="members-user-role" class="hidden text-xs font-medium bg-white/10 text-white px-3 py-1 rounded-full uppercase tracking-wide"></span>
+            <button
+              id="members-logout-button"
+              class="hidden md:inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+              data-logout-button
+            >
+              Sair
+            </button>
+            <button
+              id="members-menu-toggle"
+              type="button"
+              class="drawer-trigger inline-flex items-center justify-center px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-secondary transition md:hidden"
+              aria-controls="drawer-menu"
+              aria-expanded="false"
+            >
+            <span class="sr-only">Abrir navegação</span>
+            <svg data-icon="menu" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="4" ry="4" stroke="currentColor" fill="none" />
+              <line x1="8" y1="9" x2="16" y2="9" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+              <line x1="8" y1="15" x2="16" y2="15" />
+            </svg>
+          </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="drawer-backdrop" class="drawer-backdrop md:hidden" aria-hidden="true"></div>
+    <aside id="drawer-menu" class="drawer-panel p-6 space-y-6 text-white md:hidden" aria-hidden="true">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-primary"></span>
+          <p class="drawer-title font-semibold text-white">Menu</p>
+        </div>
+        <button
+          id="drawer-close"
+          type="button"
+          class="drawer-close text-white/70 hover:text-white transition text-lg leading-none"
+          aria-label="Fechar menu"
+        >
+          &times;
+        </button>
+      </div>
+      <nav>
+        <ul class="drawer-nav text-sm font-semibold">
+          <li>
+            <a class="block hover:text-primary transition" href="dashboard.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2" ry="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7" y1="20" x2="17" y2="20"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+              Painel
+            </a>
+          </li>
+          <li>
+            <a class="block text-primary transition" href="members.html" aria-current="page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Cadastros
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="finance.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Financeiro
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="bar.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-1 7a5 5 0 0 1-5 4H12a5 5 0 0 1-5-4Z"/><path d="M5 3h14"/><path d="M10 18h4"/><path d="M9 21h6"/></svg>
+              Bar &amp; Belisco
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="games.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+              Jogos
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="gallery.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 15-3.5-3.5a2.1 2.1 0 0 0-3 0L9 18"/></svg>
+              Galeria
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="noticias.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h2"/><path d="M5 13V5c0-.6.4-1 1-1h9"/><path d="M8 21h8"/><path d="M12 17V3h4l4 4v10c0 .6-.4 1-1 1h-7"/><path d="M6 17v-2"/></svg>
+              Notícias
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <button
+        class="w-full px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+        data-logout-button
+      >
+        Sair
+      </button>
+    </aside>
+
+    <main class="max-w-6xl mx-auto px-4 py-10 space-y-10 mobile-narrow">
+      <nav class="text-xs text-secondary/60 flex items-center gap-2 mb-2" aria-label="Breadcrumb">
+        <a href="dashboard.html" class="hover:text-primary">Painel</a>
+        <span>/</span>
+        <span class="text-secondary font-semibold">Cadastros</span>
+      </nav>
+      <section class="grid lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded-xl shadow p-6 space-y-4">
+          <div>
+            <h2 class="text-xl font-semibold">Registrar novo sócio</h2>
+            <p class="text-sm text-secondary/70">
+              Preencha todos os campos. Apenas administradores podem realizar cadastros nesta página.
+            </p>
+          </div>
+          <div
+            id="member-feedback"
+            class="hidden rounded-md border px-3 py-2 text-sm"
+            role="status"
+            aria-live="polite"
+            data-feedback
+          ></div>
+          <div
+            id="member-admin-only-hint"
+            class="hidden rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+            role="status"
+            aria-live="polite"
+          >
+            Apenas administradores podem realizar cadastros. Solicite a um administrador para registrar novos sócios.
+          </div>
+          <form id="member-form" class="space-y-4">
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-name">Nome completo</label>
+                <input
+                  type="text"
+                  id="member-name"
+                  name="member-name"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-role">Perfil</label>
+                <select
+                  id="member-role"
+                  name="member-role"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Selecione</option>
+                  <option value="admin">Administrador</option>
+                  <option value="diretor">Diretor</option>
+                  <option value="imprensa">Imprensa</option>
+                  <option value="financeiro">Financeiro</option>
+                  <option value="socio">Sócio</option>
+                  <option value="visitante">Visitante</option>
+                  <option value="crianca">Criança</option>
+                </select>
+                <p class="text-xs text-slate-500 mt-1">
+                  Perfis com acesso ao sistema exigem email. Crianças não precisam de credencial.
+                </p>
+              </div>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-email">Email</label>
+                <input
+                  type="email"
+                  id="member-email"
+                  name="member-email"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div class="md:col-span-1">
+                <label class="block text-sm font-medium mb-1" for="member-phone">Telefone</label>
+                <input
+                  type="tel"
+                  id="member-phone"
+                  name="member-phone"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-password">Senha provisória</label>
+                <input
+                  type="text"
+                  id="member-password"
+                  name="member-password"
+                  placeholder="Gerada automaticamente ao salvar"
+                  readonly
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm bg-stadium text-secondary/60 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium mb-1" for="member-street">Logradouro</label>
+                <input
+                  type="text"
+                  id="member-street"
+                  name="member-street"
+                  placeholder="Rua, avenida, travessa..."
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div class="md:col-span-2 flex flex-col sm:flex-row sm:items-end gap-3">
+                <label class="flex-1 space-y-1">
+                  <span class="block text-sm font-medium" for="member-number">Número</span>
+                  <input
+                    type="text"
+                    id="member-number"
+                    name="member-number"
+                    inputmode="numeric"
+                    placeholder="Ex.: 123"
+                    class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </label>
+                <label class="inline-flex items-center gap-2 text-xs text-secondary/70">
+                  <input
+                    type="checkbox"
+                    id="member-no-number"
+                    name="member-no-number"
+                    class="h-4 w-4 rounded border border-secondary/20 text-primary focus:ring-primary"
+                  />
+                  Sem número
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-city">Município</label>
+                <input
+                  type="text"
+                  id="member-city"
+                  name="member-city"
+                  placeholder="Cidade"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-state">Estado (UF)</label>
+                <input
+                  type="text"
+                  id="member-state"
+                  name="member-state"
+                  maxlength="2"
+                  placeholder="SP"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-birth">Data de nascimento</label>
+                <input
+                  type="text"
+                  id="member-birth"
+                  name="member-birth"
+                  placeholder="dd/mm/aaaa"
+                  inputmode="numeric"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-join">Entrada no clube</label>
+                <input
+                  type="text"
+                  id="member-join"
+                  name="member-join"
+                  placeholder="dd/mm/aaaa"
+                  inputmode="numeric"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1" for="member-fee">Mensalidade</label>
+                <input
+                  type="number"
+                  id="member-fee"
+                  name="member-fee"
+                  step="0.01"
+                  min="0"
+                  placeholder="Opcional"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div>
+              <span class="block text-sm font-medium mb-1">Foto do sócio</span>
+              <label
+                for="member-photo"
+                class="inline-flex items-center justify-center px-4 py-2 rounded-md border border-secondary/20 text-sm font-medium text-secondary hover:border-primary hover:text-primary cursor-pointer"
+              >
+                Escolher foto
+              </label>
+              <input type="file" id="member-photo" name="member-photo" accept="image/*" class="hidden" />
+              <p id="member-photo-name" class="mt-2 text-xs text-secondary/60">Nenhum arquivo selecionado</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="member-notes">Observações</label>
+              <textarea
+                id="member-notes"
+                name="member-notes"
+                rows="3"
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              ></textarea>
+            </div>
+            <input type="hidden" id="member-edit-id" name="member-edit-id" />
+            <div class="flex justify-end">
+              <button
+                type="submit"
+                class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                Salvar sócio
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6 space-y-4">
+          <div>
+            <h2 class="text-xl font-semibold">Histórico e baixas</h2>
+            <p class="text-sm text-secondary/70">
+              Registre baixas por inadimplência, pedido de desligamento ou expulsão. O motivo permanece disponível para consulta.
+            </p>
+          </div>
+          <div id="member-history-empty" class="text-sm text-secondary/60">
+            Selecione um sócio para visualizar ou registrar histórico.
+          </div>
+          <div id="member-history" class="hidden space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <h3 class="font-semibold" id="history-member-name">--</h3>
+                <span id="history-member-role" class="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary"></span>
+              </div>
+              <button
+                id="history-edit-member"
+                type="button"
+                class="hidden px-3 py-1 text-xs rounded-md border border-secondary/10 text-secondary hover:border-primary hover:text-primary transition"
+              >
+                Editar dados
+              </button>
+            </div>
+            <div id="role-update-wrapper" class="hidden space-y-2">
+              <label class="block text-xs font-medium text-secondary/60" for="history-role-select">Perfil do sócio</label>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <select
+                  id="history-role-select"
+                  class="flex-1 rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="admin">Administrador</option>
+                  <option value="diretor">Diretor</option>
+                  <option value="imprensa">Imprensa</option>
+                  <option value="financeiro">Financeiro</option>
+                  <option value="socio">Sócio</option>
+                  <option value="visitante">Visitante</option>
+                  <option value="crianca">Criança</option>
+                </select>
+                <button
+                  id="role-update-button"
+                  type="button"
+                  class="px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-black transition"
+                >
+                  Atualizar perfil
+                </button>
+              </div>
+            </div>
+            <dl class="grid md:grid-cols-2 gap-3 text-xs text-secondary/60">
+              <div>
+                <dt>Telefone</dt>
+                <dd id="history-member-phone" class="text-sm text-secondary/80 font-medium" data-copy>--</dd>
+              </div>
+              <div>
+                <dt>Status atual</dt>
+                <dd id="history-member-status" class="text-sm text-secondary/80 font-medium">--</dd>
+              </div>
+              <div class="md:col-span-2">
+                <dt>Endereço</dt>
+                <dd id="history-member-address" class="text-sm text-secondary/80 font-medium">--</dd>
+              </div>
+            </dl>
+            <form id="member-exit-form" class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium mb-1" for="exit-status">Alterar status</label>
+                <select
+                  id="exit-status"
+                  required
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Selecione</option>
+                  <option value="ativo">Ativo</option>
+                  <option value="inativo">Inativo</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1" for="exit-reason">Motivo da baixa / observação</label>
+                <textarea
+                  id="exit-reason"
+                  rows="3"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                ></textarea>
+              </div>
+              <div class="flex justify-end">
+                <button
+                  type="submit"
+                  class="px-4 py-2 rounded-md bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition"
+                >
+                  Atualizar histórico
+                </button>
+              </div>
+            </form>
+            <div>
+              <h4 class="text-sm font-semibold text-secondary/80 mb-2">Registros anteriores</h4>
+              <p id="history-delete-hint" class="text-[11px] text-secondary/60 -mt-1 mb-2 hidden">
+                Administradores podem excluir registros lançados por engano.
+              </p>
+              <ul id="member-history-list" class="space-y-2 text-xs text-secondary/70 sm:text-sm max-h-64 overflow-y-auto"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 bg-stadium border border-secondary/10 rounded-xl px-4 py-4 shadow-sm">
+          <div>
+            <h1 class="text-2xl font-semibold sm:text-3xl lg:text-4xl">Gestão de sócios</h1>
+            <p class="text-xs text-secondary/70 sm:text-sm">
+              Registre informações completas de administradores, diretores, sócios, visitantes e crianças.
+            </p>
+          </div>
+          <button
+            type="button"
+            id="members-toggle-list"
+            class="list-toggle-button inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-xs font-semibold transition sm:text-sm"
+            aria-expanded="false"
+          >
+            Abrir lista
+          </button>
+        </div>
+        <div id="members-list-wrapper" class="space-y-4 hidden">
+          <div class="bg-stadium border border-secondary/10 rounded-xl px-4 py-3">
+            <div class="grid gap-3 md:grid-cols-[minmax(220px,1.6fr)_minmax(160px,1fr)_minmax(120px,0.6fr)_auto]">
+              <input
+                type="search"
+                id="member-search"
+                placeholder="Pesquisar por nome, telefone ou email..."
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <select
+                id="member-role-filter"
+                class="rounded-md border border-secondary/20 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Todos os perfis</option>
+                <option value="admin">Administradores</option>
+                <option value="diretor">Diretores</option>
+                <option value="imprensa">Imprensa</option>
+                <option value="financeiro">Financeiros</option>
+                <option value="socio">Sócios</option>
+                <option value="visitante">Visitantes</option>
+                <option value="crianca">Crianças</option>
+              </select>
+              <select
+                id="member-status-filter"
+                class="rounded-md border border-secondary/20 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Status</option>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+              <button
+                type="button"
+                id="members-export-button"
+                class="w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-md border border-secondary/20 bg-white px-4 py-2 text-xs font-medium text-secondary hover:border-primary hover:text-primary transition sm:text-sm"
+              >
+                Exportar cadastro
+              </button>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl shadow">
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[720px] divide-y divide-secondary/10 text-xs sm:text-sm">
+                <thead class="bg-stadium text-xs uppercase text-secondary/60">
+                  <tr>
+                    <th class="px-4 py-3 text-right">Nº</th>
+                    <th class="px-4 py-3 text-left">Nome</th>
+                    <th class="px-4 py-3 text-left">Perfil</th>
+                    <th class="px-4 py-3 text-left">Telefone</th>
+                    <th class="px-4 py-3 text-left">Entrada</th>
+                    <th class="px-4 py-3 text-left">Status</th>
+                    <th class="px-4 py-3 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="members-table" class="divide-y divide-secondary/10 text-xs sm:text-sm whitespace-nowrap"></tbody>
+              </table>
+            </div>
+            <div id="members-empty" class="text-center text-sm text-secondary/60 py-10 hidden">
+              Nenhum sócio encontrado.
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center justify-end gap-3 pt-2 border-t border-secondary/10">
+            <button
+              type="button"
+              id="members-back-top"
+              class="text-xs font-semibold text-secondary hover:text-primary transition"
+            >
+              Voltar ao topo
+            </button>
+            <button
+              type="button"
+              id="members-close-list"
+              class="text-xs font-semibold text-rose-500 hover:text-rose-600 transition"
+            >
+              Fechar lista
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="member-row-template">
+      <tr class="hover:bg-stadium">
+        <td class="px-4 py-3 text-right font-semibold text-secondary/60" data-field="serial">#</td>
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-3">
+            <img class="h-10 w-10 rounded-full object-cover bg-secondary/10 shrink-0" data-field="photo" alt="Foto do sócio" loading="lazy" />
+            <div>
+              <div class="font-medium text-secondary/90 max-w-[160px] truncate" data-field="name">Nome</div>
+              <div class="text-[11px] text-secondary/60 max-w-[200px] truncate" data-field="email">Email</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3 capitalize max-w-[120px] truncate" data-field="role"></td>
+        <td class="px-4 py-3 max-w-[120px] truncate" data-field="phone"></td>
+        <td class="px-4 py-3 max-w-[100px] truncate" data-field="joinDate"></td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-1 text-[11px] rounded-full font-medium" data-field="status">--</span>
+        </td>
+        <td class="px-4 py-3 text-right space-x-2">
+          <button
+            type="button"
+            data-action="edit"
+            class="hidden px-3 py-1 text-xs rounded-md border border-secondary/10 hover:border-primary hover:text-primary transition"
+          >
+            Editar
+          </button>
+          <button
+            type="button"
+            data-action="delete"
+            class="hidden px-3 py-1 text-xs rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 transition"
+          >
+            Excluir
+          </button>
+          <button
+            type="button"
+            data-action="select"
+            class="px-3 py-1 text-xs rounded-md border border-secondary/10 hover:border-primary"
+          >
+            Detalhes
+          </button>
+          <button
+            type="button"
+            data-action="payments"
+            class="px-3 py-1 text-xs rounded-md border border-secondary/10 hover:border-secondary"
+          >
+            Mensalidades
+          </button>
+        </td>
+      </tr>
+    </template>
+
+    <dialog id="payments-dialog" class="p-0 rounded-xl shadow-2xl max-w-3xl w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="payments-form">
+        <input type="hidden" id="payments-member-id" />
+        <div class="px-6 py-4 border-b border-secondary/10 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold" id="payments-member-name">Mensalidades</h3>
+            <p class="text-xs text-secondary/60" id="payments-member-info"></p>
+          </div>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">
+            &times;
+          </button>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1" for="payment-month">Competência</label>
+              <input
+                type="date"
+                id="payment-month"
+                lang="pt-BR"
+                required
+                min="2026-01-01"
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="payment-status">Status</label>
+              <select
+                id="payment-status"
+                required
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="pago">Pago</option>
+                <option value="pendente">Pendente</option>
+                <option value="isentado">Isentado</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="payment-notes">Observação</label>
+            <textarea
+              id="payment-notes"
+              rows="2"
+              class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            ></textarea>
+          </div>
+          <div class="flex justify-end">
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+            >
+              Registrar mensalidade
+            </button>
+          </div>
+          <div class="border-t border-secondary/10 pt-4 space-y-3">
+            <div>
+              <h4 class="text-sm font-semibold text-secondary/80">Isenção por período</h4>
+              <p class="text-xs text-secondary/60">
+                Marque o sócio como isentado entre dois meses. Pagamentos já quitados serão preservados.
+              </p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-medium mb-1" for="exempt-start">De</label>
+                <input
+                  type="month"
+                  id="exempt-start"
+                  min="2026-01"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1" for="exempt-end">Até</label>
+                <input
+                  type="month"
+                  id="exempt-end"
+                  min="2026-01"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium mb-1" for="exempt-notes">Observação</label>
+                <input
+                  type="text"
+                  id="exempt-notes"
+                  placeholder="Opcional"
+                  class="w-full rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div class="flex justify-end gap-3">
+              <button
+                type="button"
+                id="exempt-remove"
+                class="px-4 py-2 rounded-md border border-rose-200 text-rose-600 text-sm font-medium hover:bg-rose-50 transition"
+              >
+                Remover isenção
+              </button>
+              <button
+                type="button"
+                id="exempt-apply"
+                class="px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-black transition"
+              >
+                Aplicar isenção
+              </button>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-secondary/80" id="payments-monthly-title">Mensalidades — janeiro a agosto</h4>
+            <p class="text-xs text-secondary/60" id="payments-monthly-empty">Nenhuma mensalidade cadastrada desde janeiro de 2026 para este sócio.</p>
+            <div id="payments-monthly-status" class="flex flex-wrap gap-2 mt-2"></div>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-secondary/80 mb-2">Histórico do sócio</h4>
+            <ul id="payments-history-list" class="space-y-2 text-sm text-secondary/70 max-h-64 overflow-y-auto"></ul>
+          </div>
+        </div>
+        <div class="px-6 py-4 bg-stadium flex justify-end">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-secondary/20 text-sm">
+            Fechar
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <footer class="bg-secondary text-white">
+      <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-6 text-sm">
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Nossa missão</h3>
+          <p class="text-white/80">
+            Promover o futebol amador com organização, convivência saudável e oportunidades para todas as idades.
+          </p>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Contato</h3>
+          <ul class="space-y-1 text-white/80">
+            <li>WhatsApp: <span data-copy="(18) 99801-9407">(18) 99801-9407</span></li>
+            <li>Email: <span data-copy="contato@amigosdabola.club">contato@amigosdabola.club</span></li>
+            <li>Endereço: <a class="hover:text-primary transition" href="https://www.google.com/maps/search/?api=1&query=Rodavia+Marechal+Rondon+Km+614+-+Guara%C3%A7a%C3%AD/SP" target="_blank" rel="noopener noreferrer">Rodavia Marechal Rondon Km 614 - Guaraçaí/SP</a></li>
+          </ul>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Transparência</h3>
+          <p class="text-white/80">
+            Acesse relatórios financeiros, sócios ativos e histórico de eventos na área restrita do sistema.
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-white/10 py-4 text-center text-xs text-white/60">
+        &copy; <span id="copyright-year"></span> Amigos da Bola. Todos os direitos reservados.
+      </div>
+    </footer>
+
+   <script type="module" src="./scripts/firebase-client.js"></script>
+<script type="module" src="./scripts/members.js"></script>
+<script src="./scripts/footer.js"></script>
+
+  </body>
+</html>

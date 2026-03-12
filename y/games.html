@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jogos • Amigos da Bola</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon-square-180.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>(function(){const originalWarn=console.warn;console.warn=(...args)=>{if(args.some(arg=>typeof arg==="string" && arg.includes("cdn.tailwindcss.com should not be used in production"))) return;originalWarn.apply(console,args);};})();</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwind-config.js"></script>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <style>
+      dialog::backdrop {
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(6px);
+      }
+
+      dialog[open] {
+        animation: modal-fade-in 0.26s ease;
+      }
+
+      @keyframes modal-fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* Exibe dia/mês/ano no input date (WebKit/Chromium) */
+      input[type="date"].date-pt::-webkit-datetime-edit {
+        display: inline-flex;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-day-field {
+        order: 1;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-text {
+        order: 2;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-month-field {
+        order: 3;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-text:nth-of-type(2) {
+        order: 4;
+      }
+      input[type="date"].date-pt::-webkit-datetime-edit-year-field {
+        order: 5;
+      }
+    </style>
+</head>
+  <body class="bg-stadium text-secondary min-h-screen">
+    <header class="bg-secondary text-white shadow-sm sticky top-0 z-30">
+      <div class="max-w-6xl mx-auto px-4 py-4">
+        <div class="flex items-center justify-between gap-4">
+          <a href="dashboard.html" class="text-2xl font-bold text-primary">Amigos da Bola</a>
+          <div class="flex items-center gap-4">
+            <nav class="hidden md:flex items-center gap-4 text-sm font-semibold text-white">
+              <a class="hover:text-primary transition" href="dashboard.html">Painel</a>
+              <a class="hover:text-primary transition" href="members.html">Cadastros</a>
+              <a class="hover:text-primary transition" href="finance.html">Financeiro</a>
+              <a class="hover:text-primary transition" href="bar.html">Bar &amp; Belisco</a>
+              <a class="text-primary" href="games.html" aria-current="page">Jogos</a>
+              <a class="hover:text-primary transition" href="gallery.html">Galeria</a>
+              <a class="hover:text-primary transition" href="noticias.html">Notícias</a>
+            </nav>
+            <span id="games-user-role" class="hidden text-xs font-medium bg-white/10 text-white px-3 py-1 rounded-full uppercase tracking-wide"></span>
+            <button
+              id="games-logout-button"
+              class="hidden md:inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+              data-logout-button
+            >
+              Sair
+            </button>
+            <button
+              id="games-menu-toggle"
+              type="button"
+              class="drawer-trigger inline-flex items-center justify-center px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-secondary transition md:hidden"
+              aria-controls="drawer-menu"
+              aria-expanded="false"
+            >
+            <span class="sr-only">Abrir navegação</span>
+            <svg data-icon="menu" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="4" ry="4" stroke="currentColor" fill="none" />
+              <line x1="8" y1="9" x2="16" y2="9" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+              <line x1="8" y1="15" x2="16" y2="15" />
+            </svg>
+          </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="drawer-backdrop" class="drawer-backdrop md:hidden" aria-hidden="true"></div>
+    <aside id="drawer-menu" class="drawer-panel p-6 space-y-6 text-white md:hidden" aria-hidden="true">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-primary"></span>
+          <p class="drawer-title font-semibold text-white">Menu</p>
+        </div>
+        <button
+          id="drawer-close"
+          type="button"
+          class="drawer-close text-white/70 hover:text-white transition text-lg leading-none"
+          aria-label="Fechar menu"
+        >
+          &times;
+        </button>
+      </div>
+      <nav>
+        <ul class="drawer-nav text-sm font-semibold">
+          <li>
+            <a class="block hover:text-primary transition" href="dashboard.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2" ry="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7" y1="20" x2="17" y2="20"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+              Painel
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="members.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Cadastros
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="finance.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Financeiro
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="bar.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-1 7a5 5 0 0 1-5 4H12a5 5 0 0 1-5-4Z"/><path d="M5 3h14"/><path d="M10 18h4"/><path d="M9 21h6"/></svg>
+              Bar &amp; Belisco
+            </a>
+          </li>
+          <li>
+            <a class="block text-primary transition" href="games.html" aria-current="page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+              Jogos
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="gallery.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 15-3.5-3.5a2.1 2.1 0 0 0-3 0L9 18"/></svg>
+              Galeria
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="noticias.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h2"/><path d="M5 13V5c0-.6.4-1 1-1h9"/><path d="M8 21h8"/><path d="M12 17V3h4l4 4v10c0 .6-.4 1-1 1h-7"/><path d="M6 17v-2"/></svg>
+              Notícias
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <button
+        class="w-full px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+        data-logout-button
+      >
+        Sair
+      </button>
+    </aside>
+
+    <main class="max-w-6xl mx-auto px-4 py-10 space-y-10 mobile-narrow">
+      <nav class="text-xs text-slate-500 flex items-center gap-2 mb-2" aria-label="Breadcrumb">
+        <a href="dashboard.html" class="hover:text-primary">Painel</a>
+        <span>/</span>
+        <span class="text-secondary font-semibold">Jogos</span>
+      </nav>
+      <section class="bg-white rounded-2xl shadow px-5 py-6 space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold sm:text-3xl lg:text-4xl">Dia de Jogos</h1>
+            <p class="text-xs text-slate-600 sm:text-sm">
+              Selecione a data para controlar presenças, escalações e resultados.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              id="games-clear-session"
+              type="button"
+              class="inline-flex items-center gap-2 rounded-md border border-primary/40 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18" />
+                <path d="M7 6l1 14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2l1-14" />
+                <path d="M10 11l4 4" />
+                <path d="M14 11l-4 4" />
+              </svg>
+              Limpar sessão
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-md border border-secondary/10 px-3 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 transition"
+              data-collapse-toggle="game-date-panel"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" data-icon="chevron" />
+              </svg>
+              <span data-collapse-label>Ocultar</span>
+            </button>
+          </div>
+        </div>
+        <div id="game-date-panel" data-collapsible class="space-y-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Data selecionada</p>
+              <p id="game-date-display" class="text-lg font-semibold text-secondary">--</p>
+            </div>
+            <div class="inline-flex flex-col gap-1 text-sm text-secondary">
+              <span>Escolher outra data</span>
+              <div class="relative">
+                <input
+                  id="game-date-display-input"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="dd/mm/aaaa"
+                  class="w-[160px] rounded-md border border-secondary/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white"
+                />
+                <button
+                  id="game-date-picker-button"
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-secondary/60 hover:text-secondary"
+                  aria-label="Abrir calendário"
+                >
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </button>
+                <input
+                  id="game-date-input"
+                  type="date"
+                  class="sr-only date-pt"
+                  aria-hidden="true"
+                  tabindex="-1"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow px-5 py-6 space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold sm:text-xl">Presenças</h2>
+            <p class="text-xs text-slate-600 sm:text-sm">
+              Defina se o atleta está presente, no gol ou na torcida. As alterações são salvas automaticamente.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-md border border-secondary/10 px-3 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 transition"
+              data-collapse-toggle="attendance-panel"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" data-icon="chevron" />
+              </svg>
+              <span data-collapse-label>Ocultar</span>
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+  <div class="relative w-full sm:w-80">
+    <input
+      id="attendance-search"
+      type="search"
+      placeholder="Buscar atleta..."
+      class="w-full rounded-full border border-secondary/20 bg-white px-3 py-2 pr-8 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+    />
+    <svg
+      class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary/40 peer-focus:text-primary"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+  </div>
+</div>
+
+        <div id="attendance-panel" data-collapsible class="space-y-4">
+          <div class="grid gap-3 md:grid-cols-3">
+            <div class="rounded-2xl border border-secondary/10 bg-white px-4 py-3 shadow">
+              <p class="text-xs uppercase tracking-wide text-secondary/60">Atletas de linha</p>
+              <p id="attendance-player-count" class="mt-1 text-2xl font-semibold text-secondary sm:text-3xl">0</p>
+            </div>
+            <div class="rounded-2xl border border-secondary/10 bg-white px-4 py-3 shadow">
+              <p class="text-xs uppercase tracking-wide text-secondary/60">Goleiros confirmados</p>
+              <p id="attendance-goalkeeper-count" class="mt-1 text-2xl font-semibold text-secondary sm:text-3xl">0</p>
+            </div>
+            <div class="rounded-2xl border border-secondary/10 bg-white px-4 py-3 shadow">
+              <p class="text-xs uppercase tracking-wide text-secondary/60">Torcedores</p>
+              <p id="attendance-supporter-count" class="mt-1 text-2xl font-semibold text-secondary sm:text-3xl">0</p>
+            </div>
+          </div>
+          <div
+            id="attendance-table-wrapper"
+            class="border border-secondary/10 rounded-xl max-h-[420px] overflow-y-auto overflow-x-auto"
+          >
+            <table class="w-full min-w-[640px] divide-y divide-secondary/10 text-xs sm:text-sm">
+              <thead class="bg-secondary/5 text-secondary">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold w-12">Nº</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold">Atleta</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold">Presença</th>
+                  <th scope="col" class="px-4 py-3 text-left font-semibold">Horário</th>
+                </tr>
+              </thead>
+              <tbody id="attendance-table" class="divide-y divide-secondary/5 bg-white text-xs sm:text-sm whitespace-nowrap">
+                <tr>
+                  <td class="px-4 py-3 text-slate-500" colspan="4">Carregando sócios...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow px-5 py-6 space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold sm:text-xl">Times e Escalações</h2>
+            <p class="text-xs text-slate-600 sm:text-sm">
+              Sorteie o jogo inicial e acompanhe a formação dinâmica dos times. Os goleiros são posicionados automaticamente.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-md border border-secondary/10 px-3 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 transition"
+              data-collapse-toggle="teams-panel" data-collapse-default="open"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" data-icon="chevron" />
+              </svg>
+              <span data-collapse-label>Ocultar</span>
+            </button>
+          </div>
+        </div>
+        <div class="space-y-5" id="teams-panel" data-collapsible>
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div id="initial-draw-wrapper" class="space-y-2">
+              <div class="flex flex-wrap items-center gap-2 text-[11px] text-secondary/60 sm:text-xs">
+                <label class="flex items-center gap-2">
+                  <span class="uppercase tracking-wide">Formato do campo</span>
+                  <select
+                    id="lineup-size-select"
+                    class="rounded-md border border-secondary/20 bg-white px-2 py-1 text-xs font-semibold text-secondary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="6">12 linha (6 por time)</option>
+                    <option value="7">14 linha (7 por time)</option>
+                    <option value="11">22 linha (11 por time)</option>
+                  </select>
+                </label>
+                <span id="lineup-size-note">Defina antes do sorteio.</span>
+              </div>
+              <button
+                id="initial-draw-button"
+                type="button"
+                class="hidden inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow hover:bg-[#d41515] transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                  <polyline points="2 17 12 22 22 17" />
+                  <polyline points="2 12 12 17 22 12" />
+                </svg>
+                Sortear 1º jogo
+              </button>
+              <p class="text-xs text-slate-600">
+                O sorteio usa os <span data-lineup-total>14</span> primeiros atletas de linha confirmados. Após o sorteio, os demais entram nos times seguintes.
+              </p>
+            </div>
+            <div
+              id="initial-draw-alert"
+              class="hidden rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-2 text-sm text-yellow-800"
+            >
+              <span data-lineup-total>14</span> atletas de linha confirmados! Execute o sorteio para iniciar a rodada.
+            </div>
+          </div>
+          <div class="grid gap-4 md:grid-cols-2">
+            <section class="rounded-xl border border-secondary/10 bg-white px-4 py-4 shadow-sm">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 class="text-sm font-semibold text-secondary uppercase tracking-wide">Fila de presença</h3>
+                <p class="text-xs text-secondary/60">
+                  Ordem dos atletas confirmados para jogar. Os <span data-lineup-total>14</span> primeiros participam do sorteio inicial.
+                </p>
+              </div>
+              <ol id="arrival-lineup-list" class="mt-3 space-y-2 text-sm text-secondary/80">
+                <li class="text-secondary/60">Nenhum atleta confirmado até o momento.</li>
+              </ol>
+            </section>
+            <section class="rounded-xl border border-secondary/10 bg-white px-4 py-4 shadow-sm">
+              <div class="flex items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold text-secondary uppercase tracking-wide">Fila de goleiros</h3>
+                <span class="text-xs text-secondary/60" id="goalkeeper-queue-count">--</span>
+              </div>
+              <ol id="goalkeeper-queue-list" class="mt-3 space-y-2 text-sm text-secondary/80">
+                <li class="text-secondary/60">Nenhum goleiro cadastrado na fila.</li>
+              </ol>
+            </section>
+          </div>
+          <div
+            id="initial-draw-overlay"
+            class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/80 backdrop-blur-sm"
+          >
+            <div class="h-10 w-10 rounded-full border-4 border-primary/25 border-t-primary animate-spin"></div>
+            <div class="text-center space-y-1">
+              <p id="initial-draw-overlay-text" class="text-sm font-semibold text-primary uppercase tracking-wide">
+                Sorteando times...
+              </p>
+              <p class="text-[11px] text-secondary/60">Aguarde alguns segundos</p>
+            </div>
+          </div>
+          <div id="teams-container" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div class="rounded-xl border border-secondary/10 bg-secondary/5 px-4 py-6 text-center text-sm text-secondary/70">
+              Nenhum time disponível. Confirme presenças para começar.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow px-5 py-6 space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold sm:text-xl">Partidas e Cronômetro</h2>
+            <p class="text-xs text-slate-600 sm:text-sm">
+              Controle os jogos de 15 minutos, registre placares e administre a rotação automática dos times.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-md border border-secondary/10 px-3 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 transition"
+              data-collapse-toggle="matches-panel"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" data-icon="chevron" />
+              </svg>
+              <span data-collapse-label>Ocultar</span>
+            </button>
+          </div>
+        </div>
+        <div id="matches-panel" data-collapsible class="space-y-5">
+          <div class="grid gap-4 md:grid-cols-[1.2fr,1fr]">
+            <div class="rounded-xl border border-secondary/10 bg-secondary/5 px-4 py-5 space-y-4">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-[11px] uppercase tracking-wide text-secondary/60 sm:text-xs">Partida atual</p>
+                  <p id="current-match-label" class="text-base font-semibold text-secondary sm:text-lg">Aguardando sorteio</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    id="timer-start"
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white shadow hover:bg-[#d41515] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Iniciar
+                  </button>
+                  <button
+                    id="timer-pause"
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-md border border-secondary/20 px-3 py-2 text-sm font-semibold text-secondary hover:bg-secondary/10 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Pausar
+                  </button>
+                  <button
+                    id="timer-reset"
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-md border border-secondary/20 px-3 py-2 text-sm font-semibold text-secondary hover:bg-secondary/10 transition"
+                  >
+                    Zerar
+                  </button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="text-center flex-1">
+                  <p class="text-[11px] uppercase tracking-wide text-secondary/60 sm:text-xs">Tempo</p>
+                  <p id="match-timer" class="text-3xl font-semibold text-secondary tabular-nums sm:text-4xl">15:00</p>
+                </div>
+                <div class="flex-1">
+                  <p class="text-[11px] uppercase tracking-wide text-secondary/60 text-center sm:text-xs">Fila de times</p>
+                  <ul id="rotation-queue" class="mt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] text-secondary/70 sm:text-xs">
+                    <li class="rounded-full border border-secondary/20 px-3 py-1">--</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <form id="match-result-form" class="rounded-xl border border-secondary/10 bg-white px-4 py-5 space-y-4">
+              <div class="space-y-1">
+                <p class="text-sm font-semibold text-secondary">Registrar resultado</p>
+                <p class="text-xs text-slate-500 sm:text-sm">
+                  Informe o placar e defina o vencedor para rotação. Em caso de empate, escolha quem permanece após pênaltis ou gol de ouro.
+                </p>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+                <div>
+                  <label class="block text-xs uppercase tracking-wide text-secondary/60 mb-1" for="match-score-a">Time A</label>
+                  <input
+                    id="match-score-a"
+                    type="number"
+                    min="0"
+                    class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs uppercase tracking-wide text-secondary/60 mb-1" for="match-score-b">Time B</label>
+                  <input
+                    id="match-score-b"
+                    type="number"
+                    min="0"
+                    class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+              <div class="space-y-3 text-sm">
+                <fieldset class="space-y-2">
+                  <legend class="text-xs uppercase tracking-wide text-secondary/60">Resultado</legend>
+                  <label class="inline-flex items-center gap-2">
+                    <input type="radio" name="match-result" value="win-home" class="h-4 w-4 text-primary focus:ring-primary" />
+                    Vitória <span data-match-team="home">Time A</span>
+                  </label>
+                  <label class="inline-flex items-center gap-2">
+                    <input type="radio" name="match-result" value="win-away" class="h-4 w-4 text-primary focus:ring-primary" />
+                    Vitória <span data-match-team="away">Time B</span>
+                  </label>
+                  <label class="inline-flex items-center gap-2">
+                    <input type="radio" name="match-result" value="draw" class="h-4 w-4 text-primary focus:ring-primary" />
+                    Empate
+                  </label>
+                </fieldset>
+                <div>
+                  <label class="block text-xs uppercase tracking-wide text-secondary/60 mb-1" for="rotation-winner">
+                    Time que permanece
+                  </label>
+                  <select
+                    id="rotation-winner"
+                    class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">Selecione</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs uppercase tracking-wide text-secondary/60 mb-1" for="match-notes">Observações</label>
+                  <textarea
+                    id="match-notes"
+                    rows="2"
+                    class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Gols, destaques ou ocorrências disciplinares."
+                  ></textarea>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <p id="match-result-feedback" class="text-xs text-slate-500" aria-live="polite" data-feedback data-tone="info"></p>
+                <button
+                  type="submit"
+                  class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow hover:bg-[#d41515] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  Registrar partida
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="rounded-xl border border-secondary/10 bg-secondary/5 px-4 py-4">
+            <h3 class="text-sm font-semibold text-secondary mb-3">Histórico do dia</h3>
+            <ul id="matches-history" class="space-y-2 text-xs text-secondary/80 sm:text-sm">
+              <li class="text-secondary/60">Nenhuma partida registrada ainda.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-2xl shadow px-5 py-6 space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold sm:text-xl">Pontuação Anual</h2>
+            <p class="text-xs text-slate-600 sm:text-sm">
+              Controle a pontuação acumulada por atleta. Ajuste manualmente quando necessário e exporte o relatório.
+            </p>
+            <p class="text-xs text-slate-500">
+              Regra base: presença (+1), vitória (+3), empate (+1), gol (+1), amarelo (-1), vermelho (-3).
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-md border border-secondary/10 px-3 py-2 text-sm font-medium text-secondary hover:bg-secondary/5 transition"
+              data-collapse-toggle="scoreboard-panel"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" data-icon="chevron" />
+              </svg>
+              <span data-collapse-label>Ocultar</span>
+            </button>
+          </div>
+        </div>
+        <div id="scoreboard-panel" data-collapsible class="space-y-4">
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <label class="text-xs text-slate-600 sm:text-sm flex items-center gap-2">
+              <span class="uppercase tracking-wide text-secondary/60">Temporada</span>
+              <select
+                id="scoreboard-season-select"
+                class="rounded-md border border-secondary/20 bg-white px-3 py-1.5 text-sm font-semibold text-secondary focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="">--</option>
+              </select>
+              <span class="hidden" id="scoreboard-season-label">--</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <input
+                  id="scoreboard-search"
+                  type="search"
+                  placeholder="Buscar atleta..."
+                  class="peer rounded-full border border-secondary/20 bg-white px-3 py-1.5 pr-8 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <svg
+                  class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary/40 peer-focus:text-primary"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+              <button
+                id="scoreboard-export"
+                type="button"
+                class="inline-flex items-center gap-2 rounded-md border border-secondary/20 bg-white px-3 py-2 text-sm font-medium text-secondary hover:bg-secondary/10 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Exportar CSV
+              </button>
+            </div>
+          </div>
+          <div class="overflow-hidden border border-secondary/10 rounded-xl">
+            <div class="overflow-x-auto">
+              <table class="min-w-[780px] w-full divide-y divide-secondary/10 text-xs sm:text-sm">
+                <thead class="bg-secondary/5">
+                  <tr class="text-secondary">
+                    <th scope="col" class="px-4 py-3 text-left font-semibold w-12">Nº</th>
+                    <th scope="col" class="px-4 py-3 text-left font-semibold">Atleta</th>
+                    <th scope="col" class="px-4 py-3 text-center font-semibold">Presença</th>
+                    <th scope="col" class="px-4 py-3 text-center font-semibold">Vitória</th>
+                    <th scope="col" class="px-4 py-3 text-center font-semibold">Empate</th>
+                    <th scope="col" class="px-4 py-3 text-center font-semibold">Gol</th>
+                    <th scope="col" class="px-4 py-3 text-center font-semibold">Amarelo</th>
+                    <th scope="col" class="px-4 py-3 text-center font-semibold">Vermelho</th>
+                    <th scope="col" class="px-4 py-3 text-center font-semibold">Total</th>
+                    <th scope="col" class="px-4 py-3 text-right font-semibold">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="scoreboard-table" class="divide-y divide-secondary/5 bg-white text-xs sm:text-sm whitespace-nowrap">
+                  <tr>
+                    <td class="px-4 py-3 text-slate-500" colspan="10">Carregando pontuação...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="scoreboard-modal"
+      class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 py-6"
+      aria-hidden="true"
+    >
+      <div class="relative w-full max-w-md rounded-2xl bg-white px-6 py-6 shadow-xl">
+        <button
+          type="button"
+          id="scoreboard-modal-close"
+          class="modal-close absolute right-4 top-4"
+          aria-label="Fechar modal"
+        >
+          <span class="sr-only">Fechar</span>
+          <svg class="h-5 w-5" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+        <form id="scoreboard-form" class="space-y-4">
+          <div>
+            <h3 id="scoreboard-form-title" class="text-lg font-semibold text-secondary">Editar pontuação</h3>
+            <p class="text-xs text-slate-500">
+              Ajuste os campos necessários. A pontuação total segue o regulamento: presença (+1), vitória (+3), empate (+1), gol (+1),
+              amarelo (-1) e vermelho (-3).
+            </p>
+          </div>
+          <input type="hidden" id="scoreboard-member-id" />
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <label class="space-y-1">
+              <span class="block text-xs uppercase tracking-wide text-secondary/60">Presença</span>
+              <input
+                id="scoreboard-presence"
+                type="number"
+                min="0"
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+            <label class="space-y-1">
+              <span class="block text-xs uppercase tracking-wide text-secondary/60">Vitória</span>
+              <input
+                id="scoreboard-win"
+                type="number"
+                min="0"
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+            <label class="space-y-1">
+              <span class="block text-xs uppercase tracking-wide text-secondary/60">Empate</span>
+              <input
+                id="scoreboard-draw"
+                type="number"
+                min="0"
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+            <label class="space-y-1">
+              <span class="block text-xs uppercase tracking-wide text-secondary/60">Gol</span>
+              <input
+                id="scoreboard-goal"
+                type="number"
+                min="0"
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+            <label class="space-y-1">
+              <span class="block text-xs uppercase tracking-wide text-secondary/60">Cartão amarelo</span>
+              <input
+                id="scoreboard-yellow"
+                type="number"
+                min="0"
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+            <label class="space-y-1">
+              <span class="block text-xs uppercase tracking-wide text-secondary/60">Cartão vermelho</span>
+              <input
+                id="scoreboard-red"
+                type="number"
+                min="0"
+                class="w-full rounded-md border border-secondary/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+          </div>
+          <div class="flex items-center justify-between gap-3">
+            <p id="scoreboard-feedback" class="text-xs text-slate-500" aria-live="polite" data-feedback data-tone="info"></p>
+            <button
+              type="submit"
+              class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow hover:bg-[#d41515] transition"
+            >
+              Salvar alterações
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <dialog id="manual-player-dialog" class="p-0 rounded-2xl shadow-2xl max-w-md w-full" aria-modal="true">
+      <form method="dialog" id="manual-player-form" class="bg-white rounded-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200">
+          <h3 id="manual-player-title" class="text-lg font-semibold text-secondary">Selecionar atleta</h3>
+          <p id="manual-player-description" class="text-xs text-slate-500 mt-1">
+            Escolha um atleta elegível para completar o time ou realizar a substituição.
+          </p>
+        </div>
+        <div class="px-5 py-4 space-y-3">
+          <div class="space-y-1">
+            <label for="manual-player-select" class="block text-sm font-medium text-secondary">Atleta disponível</label>
+            <select
+              id="manual-player-select"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            ></select>
+          </div>
+          <p id="manual-player-feedback" class="text-xs text-slate-500" role="status" aria-live="polite" data-feedback data-tone="info"></p>
+        </div>
+        <div class="px-5 py-3 bg-slate-50 flex justify-end gap-2">
+          <button
+            type="button"
+            data-action="cancel-manual-player"
+            class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-secondary hover:bg-white transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            id="manual-player-submit"
+            class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow hover:bg-[#d41515] transition"
+          >
+            Confirmar
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <footer class="bg-secondary text-white mt-10">
+      <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-6 text-sm">
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Nossa missão</h3>
+          <p class="text-white/80">
+            Promover o futebol amador com organização, convivência saudável e oportunidades para todas as idades.
+          </p>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Contato</h3>
+          <ul class="space-y-1 text-white/80">
+            <li>WhatsApp: <span data-copy="(18) 99801-9407">(18) 99801-9407</span></li>
+            <li>Email: <span data-copy="contato@amigosdabola.club">contato@amigosdabola.club</span></li>
+            <li>Endereço: <a class="hover:text-primary transition" href="https://www.google.com/maps/search/?api=1&query=Rodavia+Marechal+Rondon+Km+614+-+Guara%C3%A7a%C3%AD/SP" target="_blank" rel="noopener noreferrer">Rodavia Marechal Rondon Km 614 - Guaraçaí/SP</a></li>
+          </ul>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Transparência</h3>
+          <p class="text-white/80">
+            Acesse relatórios financeiros, sócios ativos e histórico de eventos na área restrita do sistema.
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-white/10 py-4 text-center text-xs text-white/60">
+        &copy; <span id="copyright-year"></span> Amigos da Bola. Todos os direitos reservados.
+      </div>
+    </footer>
+
+    <script src="./scripts/footer.js"></script>
+    <script type="module">
+  import { getFirebaseAuth } from "./scripts/firebase-client.js";
+  const auth = getFirebaseAuth();
+  const INACTIVITY_LIMIT_MINUTES = 15; // ⏱ tempo máximo de inatividade (ajustável)
+  let inactivityTimer;
+
+  function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(async () => {
+      const user = auth.currentUser;
+      if (user) {
+        await signOut(auth);
+        alert("Sua sessão expirou por inatividade. Faça login novamente.");
+        window.location.href = "login.html"; // 🔐 ajuste conforme o nome da sua tela de login
+      }
+    }, INACTIVITY_LIMIT_MINUTES * 60 * 1000);
+  }
+
+  // Eventos que resetam o contador de inatividade
+  ["mousemove", "keydown", "click", "scroll", "touchstart"].forEach(event => {
+    window.addEventListener(event, resetInactivityTimer);
+  });
+
+  // Inicia o temporizador ao carregar
+  resetInactivityTimer();
+
+  // 🔒 Refresca sessão se aba estiver oculta e reaberta após longo tempo
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      const lastActive = Number(localStorage.getItem("lastActive")) || 0;
+      const now = Date.now();
+      const diffMinutes = (now - lastActive) / 1000 / 60;
+      if (diffMinutes > INACTIVITY_LIMIT_MINUTES) {
+        signOut(auth).then(() => {
+          alert("Sua sessão expirou. Faça login novamente.");
+          window.location.href = "login.html";
+        });
+      }
+    } else {
+      localStorage.setItem("lastActive", Date.now());
+    }
+  });
+</script>
+
+
+    <script type="module" src="scripts/games.js"></script>
+    <script type="module" src="./scripts/firebase-client.js"></script>
+
+  </body>
+</html>

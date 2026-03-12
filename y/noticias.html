@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amigos da Bola • Notícias (Admin)</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon-square-180.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>(function(){const originalWarn=console.warn;console.warn=(...args)=>{if(args.some(arg=>typeof arg==="string" && arg.includes("cdn.tailwindcss.com should not be used in production"))) return;originalWarn.apply(console,args);};})();</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwind-config.js"></script>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <style>
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: url("assets/simbolo3.jpeg") no-repeat center 18%;
+        background-size: min(52vmin, 460px);
+        opacity: 0.05;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .blog-content {
+        position: relative;
+        line-height: 1.5rem;
+        transition: max-height 0.3s ease;
+      }
+
+      .blog-content[data-collapsed="true"] {
+        max-height: calc(1.5rem * 5);
+        overflow: hidden;
+      }
+
+      .blog-content[data-collapsed="true"]::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 3rem;
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
+        pointer-events: none;
+      }
+
+      .media-frame {
+        aspect-ratio: 16 / 9;
+        max-height: 260px;
+        width: 100%;
+        background: #0b0f1a;
+      }
+
+      .media-frame video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .media-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      @media (min-width: 768px) {
+        .media-frame {
+          max-height: 320px;
+        }
+      }
+
+      /* Drawer mobile - estilos globais já em assets/theme.css; mantidos aqui apenas para garantir fallback */
+      .drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 30;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      .drawer-backdrop[data-open="true"] {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .drawer-panel {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 280px;
+        max-width: 82%;
+        height: 100vh;
+        background: linear-gradient(135deg, #0b0b0d, #111827);
+        z-index: 40;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: 4px 0 16px rgba(0, 0, 0, 0.16);
+        overflow-y: auto;
+      }
+      .drawer-panel[data-open="true"] {
+        transform: translateX(0);
+      }
+    </style>
+</head>
+  <body class="bg-stadium text-secondary min-h-screen">
+    <script type="module">
+      import { requireAuth } from "./scripts/auth.js";
+      requireAuth({
+        allowedRoles: ["admin", "imprensa"],
+        redirectTo: "index.html#noticias",
+      });
+    </script>
+    <header class="bg-secondary text-white shadow-sm sticky top-0 z-20">
+      <div class="max-w-6xl mx-auto px-4 py-4">
+        <div class="flex items-center justify-between gap-4">
+          <a href="dashboard.html" class="text-2xl font-bold text-primary">Amigos da Bola</a>
+          <div class="flex items-center gap-4">
+            <nav class="hidden md:flex items-center gap-4 text-sm font-semibold text-white">
+              <a class="hover:text-primary transition" href="dashboard.html">Painel</a>
+              <a class="hover:text-primary transition" href="members.html">Cadastros</a>
+              <a class="hover:text-primary transition" href="finance.html">Financeiro</a>
+              <a class="hover:text-primary transition" href="bar.html">Bar &amp; Belisco</a>
+              <a class="hover:text-primary transition" href="games.html">Jogos</a>
+              <a class="hover:text-primary transition" href="gallery.html">Galeria</a>
+              <a class="text-primary" href="noticias.html" aria-current="page">Notícias</a>
+            </nav>
+            <span
+              id="index-user-role"
+              class="hidden text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full bg-white/10 text-white"
+            ></span>
+            <button
+              id="index-logout-button"
+              type="button"
+              class="hidden md:inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+              data-logout-visibility="desktop"
+              data-logout-button
+            >
+              Sair
+            </button>
+            <button
+              id="noticias-menu-toggle"
+              type="button"
+              class="drawer-trigger inline-flex items-center justify-center px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-secondary transition md:hidden"
+              aria-controls="drawer-menu"
+              aria-expanded="false"
+            >
+              <span class="sr-only">Abrir navegação</span>
+              <svg data-icon="menu" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="4" ry="4" stroke="currentColor" fill="none" />
+                <line x1="8" y1="9" x2="16" y2="9" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+                <line x1="8" y1="15" x2="16" y2="15" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="drawer-backdrop" class="drawer-backdrop md:hidden" aria-hidden="true"></div>
+    <aside id="drawer-menu" class="drawer-panel p-6 space-y-6 text-white md:hidden" aria-hidden="true">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-primary"></span>
+          <p class="drawer-title font-semibold text-white">Menu</p>
+        </div>
+        <button
+          id="drawer-close"
+          type="button"
+          class="drawer-close text-white/70 hover:text-white transition text-lg leading-none"
+          aria-label="Fechar menu"
+        >
+          &times;
+        </button>
+      </div>
+      <nav>
+        <ul class="drawer-nav text-sm font-semibold">
+          <li>
+            <a class="block hover:text-primary transition" href="dashboard.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2" ry="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7" y1="20" x2="17" y2="20"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+              Painel
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="members.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Cadastros
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="finance.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Financeiro
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="bar.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-1 7a5 5 0 0 1-5 4H12a5 5 0 0 1-5-4Z"/><path d="M5 3h14"/><path d="M10 18h4"/><path d="M9 21h6"/></svg>
+              Bar &amp; Belisco
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="games.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+              Jogos
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="gallery.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 15-3.5-3.5a2.1 2.1 0 0 0-3 0L9 18"/></svg>
+              Galeria
+            </a>
+          </li>
+          <li>
+            <a class="block text-primary transition" href="noticias.html" aria-current="page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h2"/><path d="M5 13V5c0-.6.4-1 1-1h9"/><path d="M8 21h8"/><path d="M12 17V3h4l4 4v10c0 .6-.4 1-1 1h-7"/><path d="M6 17v-2"/></svg>
+              Notícias
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <div class="space-y-2">
+        <button
+          id="drawer-login"
+          data-action="open-login"
+          type="button"
+          class="w-full inline-flex items-center justify-center rounded-md border border-white/20 bg-white/10 text-white px-4 py-2 text-sm font-semibold hover:bg-white/20 transition"
+        >
+          Área Restrita
+        </button>
+        <button
+          type="button"
+          class="w-full px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition md:hidden"
+          data-logout-visibility="mobile"
+          data-logout-button
+        >
+          Sair
+        </button>
+      </div>
+    </aside>
+
+    <main class="max-w-6xl mx-auto px-4 py-10 space-y-16 relative z-[1] mobile-narrow">
+      <nav class="text-xs text-slate-500 flex items-center gap-2 mb-2" aria-label="Breadcrumb">
+        <a href="dashboard.html" class="hover:text-primary">Painel</a>
+        <span>/</span>
+        <span class="text-secondary font-semibold">Notícias</span>
+      </nav>
+      <section class="grid md:grid-cols-2 gap-10 items-center">
+        <div class="space-y-6">
+          <span class="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+            Clube Amigos da Bola
+          </span>
+          <h1 class="text-4xl md:text-5xl font-bold leading-tight">
+            Futebol, amizade e histórias que unificam gerações
+          </h1>
+          <p class="text-lg text-slate-600">
+            Acompanhe as notícias e o blog do clube, conheça os sócios e faça parte da nossa comunidade com
+            transparência nas informações e na gestão do dia a dia.
+          </p>
+          <a
+            href="#noticias"
+            class="inline-flex items-center justify-center px-5 py-3 rounded-md border border-primary text-primary font-semibold hover:bg-primary/10 transition"
+          >
+            Ver últimas notícias
+          </a>
+        </div>
+        <div class="bg-white shadow-lg rounded-xl p-6 md:p-8 space-y-6 relative">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-semibold">Próximos eventos</h2>
+              <p class="text-xs text-slate-500">
+                Agenda oficial do clube reforçando treinamentos, encontros e confraternizações.
+              </p>
+            </div>
+            <button
+              id="add-event-btn"
+              class="hidden px-3 py-1.5 text-xs rounded-md bg-primary text-white font-medium hover:bg-[#d41515] transition"
+            >
+              Novo evento
+            </button>
+          </div>
+          <ul class="space-y-4 text-sm text-slate-600" id="events-list"></ul>
+          <div id="events-empty" class="text-xs text-slate-500 text-center">Nenhum evento cadastrado.</div>
+        </div>
+      </section>
+
+      <section
+        id="socios"
+        class="bg-white/90 border border-primary/10 rounded-2xl px-6 py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 shadow-sm"
+      >
+        <div class="space-y-2">
+          <h2 class="text-2xl font-semibold text-secondary">Família Amigos da Bola</h2>
+          <p class="text-sm text-slate-600">
+            Sócios ativos registrados: <span class="text-primary font-bold text-lg" id="socios-count">--</span>
+          </p>
+          <p class="text-xs text-slate-500">
+            A contagem é atualizada automaticamente sempre que um novo sócio é cadastrado ou desligado.
+          </p>
+        </div>
+        <a
+          href="gallery.html"
+          id="open-gallery-btn"
+          class="self-start md:self-center px-5 py-3 rounded-md bg-primary text-white text-sm font-semibold hover:bg-[#d41515] transition"
+        >
+          Ver galeria de sócios
+        </a>
+      </section>
+
+      <section id="birthday-spotlight" class="bg-white/90 border border-primary/10 rounded-2xl px-6 py-8 shadow-sm hidden">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div class="flex items-center gap-4">
+            <div
+              id="birthday-photo"
+              class="h-20 w-20 rounded-full border-4 border-primary/30 bg-slate-200 overflow-hidden flex items-center justify-center text-3xl"
+              aria-hidden="true"
+            >
+              🎉
+            </div>
+            <div class="space-y-1">
+              <h2 class="text-2xl font-semibold text-secondary">Aniversariante do dia</h2>
+              <p class="text-sm text-slate-600" id="birthday-details"></p>
+            </div>
+          </div>
+          <div class="text-sm text-slate-500 md:text-right">
+            <p>
+              Deseje parabéns ao <span class="font-semibold" data-birthday-context>nosso sócio</span>
+              e incentive-o a celebrar com a família Amigos da Bola!
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="noticias" class="space-y-6">
+        <div class="flex items-end justify-between">
+          <div>
+            <h2 class="text-3xl font-bold">Notícias do clube</h2>
+            <p class="text-slate-600 text-sm md:text-base">
+              Atualizações oficiais compartilhadas pelos administradores e diretores.
+            </p>
+          </div>
+          <button
+            id="new-news-btn"
+            class="hidden px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-black transition"
+          >
+            Publicar notícia
+          </button>
+        </div>
+        <div id="news-list" class="grid md:grid-cols-2 gap-6"></div>
+        <div id="news-empty" class="text-center text-slate-500 hidden">
+          Nenhuma notícia publicada até o momento.
+        </div>
+      </section>
+
+      <section id="blogs" class="space-y-6">
+        <div class="flex items-end justify-between">
+          <div>
+            <h2 class="text-3xl font-bold">Blog Amigos da Bola</h2>
+            <p class="text-slate-600 text-sm md:text-base">
+              Histórias, bastidores e conteúdos produzidos pelos sócios do clube.
+            </p>
+          </div>
+          <button
+            id="new-blog-btn"
+            class="hidden px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-black transition"
+          >
+            Escrever no blog
+          </button>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6" id="blog-list"></div>
+        <div id="blog-empty" class="text-center text-slate-500 hidden">
+          Ainda não temos publicações no blog.
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-secondary text-white">
+      <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-6 text-sm">
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Nossa missão</h3>
+          <p class="text-white/80">
+            Promover o futebol amador com organização, convivência saudável e oportunidades para todas as idades.
+          </p>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Contato</h3>
+          <ul class="space-y-1 text-white/80">
+            <li>WhatsApp: <span data-copy="(18) 99801-9407">(18) 99801-9407</span></li>
+            <li>Email: <span data-copy="contato@amigosdabola.club">contato@amigosdabola.club</span></li>
+            <li>Endereço: <a class="hover:text-primary transition" href="https://www.google.com/maps/search/?api=1&query=Rodavia+Marechal+Rondon+Km+614+-+Guara%C3%A7a%C3%AD/SP" target="_blank" rel="noopener noreferrer">Rodavia Marechal Rondon Km 614 - Guaraçaí/SP</a></li>
+          </ul>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Transparência</h3>
+          <p class="text-white/80">
+            Acesse relatórios financeiros, sócios ativos e histórico de eventos na área restrita do sistema.
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-white/10 py-4 text-center text-xs text-white/60">
+        &copy; <span id="copyright-year"></span> Amigos da Bola. Todos os direitos reservados.
+      </div>
+    </footer>
+
+    <dialog id="login-dialog" class="p-0 rounded-xl shadow-2xl max-w-sm w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="login-form">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Acesso restrito</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="login-email">Email</label>
+            <input
+              id="login-email"
+              type="email"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="login-password">Senha</label>
+            <div class="relative">
+              <input
+                id="login-password"
+                type="password"
+                required
+                class="w-full rounded-md border border-slate-300 px-3 py-2 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                type="button"
+                id="login-password-toggle"
+                class="absolute inset-y-0 right-0 flex items-center px-3 text-xs font-semibold text-primary hover:text-secondary transition"
+              >
+                Mostrar
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500">
+            Administradores podem gerar senhas provisórias na página de cadastros.
+          </p>
+          <div class="flex items-center justify-between text-xs text-primary font-semibold">
+            <button type="button" id="login-forgot-link" class="hover:text-secondary transition">Esqueci minha senha</button>
+          </div>
+          <p class="text-xs text-slate-500">
+            Ainda não faz parte? <button type="button" id="login-create-account" class="font-semibold text-primary hover:text-secondary transition">Criar conta</button>
+          </p>
+          <div id="login-feedback" class="text-xs text-rose-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515]">
+            Entrar
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="reset-dialog" class="p-0 rounded-xl shadow-2xl max-w-sm w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="reset-form">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Recuperar acesso</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-4 space-y-3">
+          <p class="text-sm text-slate-600">
+            Informe o seu email para receber um link seguro de redefinição de senha.
+          </p>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="reset-email">Email</label>
+            <input
+              id="reset-email"
+              type="email"
+              required
+              autocomplete="username"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div id="reset-feedback" class="text-xs text-slate-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+          <p class="text-xs text-slate-500">
+            Caso o email caia no spam, marque como "Não é spam" para que futuras mensagens cheguem na caixa de entrada.
+          </p>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button
+            type="button"
+            data-action="close"
+            class="px-4 py-2 rounded-md border border-slate-300 text-sm transition hover:border-slate-400 hover:bg-white"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium transition hover:bg-[#d41515] hover:shadow-md"
+          >
+            Enviar link
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="event-dialog" class="p-0 rounded-xl shadow-2xl max-w-md w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="event-form">
+        <input type="hidden" id="event-id" />
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold" id="event-form-title">Novo evento</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="event-name">Título</label>
+            <input
+              id="event-name"
+              type="text"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1" for="event-date">Data</label>
+              <input
+                id="event-date"
+                type="date"
+                required
+                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1" for="event-time">Horário</label>
+              <input
+                id="event-time"
+                type="time"
+                required
+                class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="event-arena">Local</label>
+            <input
+              id="event-arena"
+              type="text"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="event-details">Descrição</label>
+            <textarea
+              id="event-details"
+              rows="3"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            ></textarea>
+          </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515]">
+            Salvar evento
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="news-dialog" class="p-0 rounded-xl shadow-2xl max-w-2xl w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="news-form">
+        <input type="hidden" id="news-id" />
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Nova notícia</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">
+            &times;
+          </button>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="news-title">Título</label>
+            <input
+              id="news-title"
+              type="text"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="news-content">Conteúdo</label>
+            <textarea
+              id="news-content"
+              rows="6"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            ></textarea>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-sm font-medium" for="news-media">Foto ou vídeo</label>
+            <div class="flex flex-wrap items-center gap-3">
+              <label
+                for="news-media"
+                class="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-secondary hover:border-primary cursor-pointer bg-white"
+              >
+                Escolher arquivo
+              </label>
+              <span id="news-media-name" class="text-sm text-slate-500">Nenhum arquivo selecionado</span>
+            </div>
+            <input
+              id="news-media"
+              type="file"
+              accept="image/*,video/*"
+              class="hidden"
+            />
+            <p class="text-xs text-slate-500">Envie até 16 MB. Obrigatório apenas se quiser ilustrar a notícia.</p>
+          </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515]">
+            Publicar
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="blog-dialog" class="p-0 rounded-xl shadow-2xl max-w-2xl w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="blog-form">
+        <input type="hidden" id="blog-id" />
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Nova publicação</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">
+            &times;
+          </button>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1" for="blog-title">Título</label>
+            <input
+              id="blog-title"
+              type="text"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1" for="blog-content">Conteúdo</label>
+            <textarea
+              id="blog-content"
+              rows="6"
+              required
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            ></textarea>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-sm font-medium" for="blog-media">Foto ou vídeo</label>
+            <div class="flex flex-wrap items-center gap-3">
+              <label
+                for="blog-media"
+                class="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-secondary hover:border-primary cursor-pointer bg-white"
+              >
+                Escolher arquivo
+              </label>
+              <span id="blog-media-name" class="text-sm text-slate-500">Nenhum arquivo selecionado</span>
+            </div>
+            <input
+              id="blog-media"
+              type="file"
+              accept="image/*,video/*"
+              class="hidden"
+            />
+            <p class="text-xs text-slate-500">Envie até 16 MB. Obrigatório apenas se quiser ilustrar a publicação.</p>
+          </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515]">
+            Publicar
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <script>
+      (function () {
+        const toggle = document.getElementById("noticias-menu-toggle");
+        const backdrop = document.getElementById("drawer-backdrop");
+        const drawer = document.getElementById("drawer-menu");
+        const closeBtn = document.getElementById("drawer-close");
+        const srLabel = toggle?.querySelector(".sr-only");
+        const legacyMenu = document.getElementById("noticias-header-menu");
+        if (legacyMenu) {
+          legacyMenu.remove();
+        }
+        if (!toggle || !drawer || !backdrop) return;
+        if (toggle.dataset.menuInitialized) return;
+        toggle.dataset.menuInitialized = "drawer";
+
+        const setOpen = (open) => {
+          toggle.setAttribute("aria-expanded", open ? "true" : "false");
+          drawer.dataset.open = open ? "true" : "false";
+          backdrop.dataset.open = open ? "true" : "false";
+          drawer.setAttribute("aria-hidden", open ? "false" : "true");
+          backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+          if (srLabel) srLabel.textContent = open ? "Fechar navegação" : "Abrir navegação";
+          document.body.classList.toggle("overflow-hidden", open);
+        };
+
+        const handleToggle = () => {
+          const isOpen = drawer.dataset.open === "true";
+          setOpen(!isOpen);
+        };
+
+        toggle.addEventListener("click", handleToggle);
+        closeBtn?.addEventListener("click", () => setOpen(false));
+        backdrop.addEventListener("click", () => setOpen(false));
+
+        drawer.addEventListener("click", (event) => {
+          if (event.target.closest("a")) {
+            setOpen(false);
+          }
+        });
+
+        window.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") setOpen(false);
+        });
+
+        window.addEventListener("resize", () => {
+          if (window.innerWidth >= 768) {
+            setOpen(false);
+          }
+        });
+      })();
+    </script>
+    <script src="./scripts/footer.js"></script>
+    <script type="module" src="./scripts/index.js"></script>
+    <script type="module" src="./scripts/firebase-client.js"></script>
+
+  </body>
+</html>

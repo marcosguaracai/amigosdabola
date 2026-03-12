@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bar & Belisco • Amigos da Bola</title>
+    <link rel="icon" href="assets/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon-square-180.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script>(function(){const originalWarn=console.warn;console.warn=(...args)=>{if(args.some(arg=>typeof arg==="string" && arg.includes("cdn.tailwindcss.com should not be used in production"))) return;originalWarn.apply(console,args);};})();</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/tailwind-config.js"></script>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <style>
+      .drawer-trigger {
+        background: #111827;
+        border: 1px solid #4b5563;
+        color: #f59e0b;
+        border-radius: 16px;
+        padding: 0.65rem 1rem;
+        min-height: 44px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+      }
+
+      .drawer-trigger:hover {
+        background: #e4450b;
+        border-color: #e4450b;
+        color: #fff;
+      }
+
+      dialog::backdrop {
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(6px);
+      }
+
+      dialog[open] {
+        animation: modal-fade-in 0.26s ease;
+      }
+
+      dialog.closing {
+        animation: modal-fade-out 0.2s ease forwards;
+      }
+
+      @keyframes modal-fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes modal-fade-out {
+        from {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(10px) scale(0.98);
+        }
+      }
+
+      .card-top-accent {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-top-accent::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+      }
+
+      .card-top-green::before {
+        background: linear-gradient(90deg, #16a34a, #34d399);
+      }
+
+      .card-top-red::before {
+        background: linear-gradient(90deg, #e11d48, #fb7185);
+      }
+
+      .card-top-blue::before {
+        background: linear-gradient(90deg, #2563eb, #60a5fa);
+      }
+
+      .summary-modal-body {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .summary-modal-body::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 3px;
+      }
+
+      .summary-accent-green .summary-modal-body::before {
+        background: linear-gradient(90deg, #16a34a, #34d399);
+      }
+
+      .summary-accent-red .summary-modal-body::before {
+        background: linear-gradient(90deg, #e11d48, #fb7185);
+      }
+
+      .summary-accent-blue .summary-modal-body::before {
+        background: linear-gradient(90deg, #2563eb, #60a5fa);
+      }
+
+      #bar-summary-list li {
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+      }
+
+      .summary-accent-green #bar-summary-list li:hover {
+        background-color: #ecfdf5;
+        border-color: rgba(34, 197, 94, 0.25);
+      }
+
+      .summary-accent-red #bar-summary-list li:hover {
+        background-color: #fff1f2;
+        border-color: rgba(244, 63, 94, 0.25);
+      }
+
+      .summary-accent-blue #bar-summary-list li:hover {
+        background-color: #eff6ff;
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+
+      [data-summary-card] {
+        transition: box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+      }
+
+      [data-summary-card]:hover {
+        box-shadow: 0 14px 24px rgba(15, 23, 42, 0.08);
+        transform: translateY(-2px);
+        background-color: #fffaf5;
+      }
+    </style>
+</head>
+  <body class="bg-stadium text-secondary min-h-screen">
+    <header class="bg-secondary text-white shadow-sm sticky top-0 z-30">
+      <div class="max-w-6xl mx-auto px-4 py-4">
+        <div class="flex items-center justify-between gap-4">
+          <a href="dashboard.html" class="text-2xl font-bold text-primary">Amigos da Bola</a>
+          <div class="flex items-center gap-4">
+            <nav class="hidden md:flex items-center gap-4 text-sm font-semibold text-white">
+              <a class="hover:text-primary transition" href="dashboard.html">Painel</a>
+              <a class="hover:text-primary transition" href="members.html">Cadastros</a>
+              <a class="hover:text-primary transition" href="finance.html">Financeiro</a>
+              <a class="text-primary" href="bar.html" aria-current="page">Bar &amp; Belisco</a>
+              <a class="hover:text-primary transition" href="games.html">Jogos</a>
+              <a class="hover:text-primary transition" href="gallery.html">Galeria</a>
+              <a class="hover:text-primary transition" href="noticias.html">Notícias</a>
+            </nav>
+            <span
+              id="bar-user-role"
+              class="hidden text-xs font-medium bg-white/10 text-white px-3 py-1 rounded-full uppercase tracking-wide"
+            ></span>
+            <button
+              id="bar-logout-button"
+              class="hidden md:inline-flex items-center justify-center px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+              data-logout-button
+            >
+              Sair
+            </button>
+            <button
+              id="bar-menu-toggle"
+              type="button"
+              class="drawer-trigger inline-flex items-center justify-center px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-secondary transition md:hidden"
+              aria-controls="drawer-menu"
+              aria-expanded="false"
+            >
+            <span class="sr-only">Abrir navegação</span>
+            <svg data-icon="menu" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="16" rx="4" ry="4" stroke="currentColor" fill="none" />
+              <line x1="8" y1="9" x2="16" y2="9" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+              <line x1="8" y1="15" x2="16" y2="15" />
+            </svg>
+          </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="drawer-backdrop" class="drawer-backdrop md:hidden" aria-hidden="true"></div>
+    <aside id="drawer-menu" class="drawer-panel p-6 space-y-6 text-white md:hidden" aria-hidden="true">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-primary"></span>
+          <p class="drawer-title font-semibold text-white">Menu</p>
+        </div>
+        <button
+          id="drawer-close"
+          type="button"
+          class="drawer-close text-white/70 hover:text-white transition text-lg leading-none"
+          aria-label="Fechar menu"
+        >
+          &times;
+        </button>
+      </div>
+      <nav>
+        <ul class="drawer-nav text-sm font-semibold">
+          <li>
+            <a class="block hover:text-primary transition" href="dashboard.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2" ry="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="7" y1="20" x2="17" y2="20"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+              Painel
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="members.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Cadastros
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="finance.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Financeiro
+            </a>
+          </li>
+          <li>
+            <a class="block text-primary transition" href="bar.html" aria-current="page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-1 7a5 5 0 0 1-5 4H12a5 5 0 0 1-5-4Z"/><path d="M5 3h14"/><path d="M10 18h4"/><path d="M9 21h6"/></svg>
+              Bar &amp; Belisco
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="games.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+              Jogos
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="gallery.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 15-3.5-3.5a2.1 2.1 0 0 0-3 0L9 18"/></svg>
+              Galeria
+            </a>
+          </li>
+          <li>
+            <a class="block hover:text-primary transition" href="noticias.html">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h2"/><path d="M5 13V5c0-.6.4-1 1-1h9"/><path d="M8 21h8"/><path d="M12 17V3h4l4 4v10c0 .6-.4 1-1 1h-7"/><path d="M6 17v-2"/></svg>
+              Notícias
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <button
+        class="w-full px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+        data-logout-button
+      >
+        Sair
+      </button>
+    </aside>
+
+    <main class="max-w-6xl mx-auto px-4 py-10 space-y-10 mobile-narrow">
+      <nav class="text-xs text-slate-500 flex items-center gap-2 mb-2" aria-label="Breadcrumb">
+        <a href="dashboard.html" class="hover:text-primary">Painel</a>
+        <span>/</span>
+        <span class="text-secondary font-semibold">Bar &amp; Belisco</span>
+      </nav>
+      <section class="space-y-6">
+        <div>
+          <h1 class="text-2xl font-semibold sm:text-3xl lg:text-4xl">Gestão do bar & belisco</h1>
+          <p class="text-xs text-slate-600 sm:text-sm">
+            Registre entradas e saídas específicas do bar, eventos e compras de insumos para manter a contabilidade separada das mensalidades.
+          </p>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-3 text-sm">
+          <div
+            class="rounded-xl bg-white shadow p-5 border border-slate-200 cursor-pointer hover:shadow-md transition card-top-accent card-top-green"
+            data-summary-card="bar-revenue"
+            role="button"
+            tabindex="0"
+          >
+            <span class="block uppercase tracking-wide text-xs text-slate-500">Total arrecadado</span>
+            <strong class="block text-xl text-secondary sm:text-2xl" id="bar-summary-revenue">R$ 0,00</strong>
+          </div>
+          <div
+            class="rounded-xl bg-white shadow p-5 border border-slate-200 cursor-pointer hover:shadow-md transition card-top-accent card-top-red"
+            data-summary-card="bar-expense"
+            role="button"
+            tabindex="0"
+          >
+            <span class="block uppercase tracking-wide text-xs text-slate-500">Total gasto</span>
+            <strong class="block text-xl text-secondary sm:text-2xl" id="bar-summary-expense">R$ 0,00</strong>
+          </div>
+          <div
+            class="rounded-xl bg-white shadow p-5 border border-slate-200 cursor-pointer hover:shadow-md transition card-top-accent card-top-blue"
+            data-summary-card="bar-balance"
+            role="button"
+            tabindex="0"
+          >
+            <span class="block uppercase tracking-wide text-xs text-slate-500">Saldo do bar</span>
+            <strong class="block text-xl text-primary sm:text-2xl" id="bar-summary-balance">R$ 0,00</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid lg:grid-cols-2 gap-6">
+        <article class="bg-white rounded-xl shadow p-6 space-y-4 border border-slate-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold sm:text-xl">Valores de referência</h2>
+              <p class="text-xs text-slate-500 sm:text-sm">
+                Ajuste os preços padrão aplicados nas vendas. Administradores podem atualizar estes valores a qualquer momento.
+              </p>
+            </div>
+          </div>
+          <form id="bar-settings-form" class="space-y-3">
+            <div class="grid gap-3 sm:grid-cols-3 text-sm">
+              <label class="space-y-1">
+                <span class="font-medium text-slate-600">Preço refrigerante (R$)</span>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  id="bar-price-refrigerante"
+                  class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </label>
+              <label class="space-y-1">
+                <span class="font-medium text-slate-600">Preço cerveja lata (R$)</span>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  id="bar-price-cerveja"
+                  class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </label>
+              <label class="space-y-1">
+                <span class="font-medium text-slate-600">Preço água (R$)</span>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  id="bar-price-agua"
+                  class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </label>
+            </div>
+            <div id="bar-settings-feedback" class="text-xs text-slate-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+            <button
+              type="submit"
+              class="w-full px-4 py-2 rounded-md bg-primary text-white text-sm font-medium hover:bg-[#d41515] transition"
+            >
+              Salvar valores padrão
+            </button>
+          </form>
+        </article>
+
+        <article class="bg-white rounded-xl shadow p-6 space-y-4 border border-slate-200">
+          <div>
+            <h2 class="text-lg font-semibold sm:text-xl">Registrar movimentação</h2>
+            <p class="text-xs text-slate-500 sm:text-sm">
+              Lance vendas, compras e eventos extras ligados ao bar e ao belisco.
+            </p>
+          </div>
+          <form id="bar-transaction-form" class="space-y-3 text-sm">
+            <div class="grid sm:grid-cols-2 gap-3">
+                <label class="space-y-1">
+                  <span class="font-medium text-slate-600">Data</span>
+                  <input
+                    type="text"
+                    id="bar-transaction-date"
+                    lang="pt-BR"
+                    required
+                    placeholder="dd/mm/aaaa"
+                    inputmode="numeric"
+                    class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <p class="text-[11px] text-slate-500">Formato: dia/mês/ano.</p>
+                </label>
+              <label class="space-y-1">
+                <span class="font-medium text-slate-600">Tipo</span>
+                <select
+                  id="bar-transaction-type"
+                  required
+                  class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Selecione</option>
+                  <option value="entrada">Entrada (venda)</option>
+                  <option value="saida">Saída (compra)</option>
+                </select>
+              </label>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <label class="space-y-1">
+                <span class="font-medium text-slate-600">Categoria</span>
+                <select
+                  id="bar-transaction-item"
+                  required
+                  class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Selecione</option>
+                  <option value="supermercado">Supermercado</option>
+                  <option value="ambev">Ambev</option>
+                  <option value="imperio">Império</option>
+                  <option value="quinta">Quinta-feira</option>
+                  <option value="domingo">Domingo</option>
+                  <option value="evento">Evento especial</option>
+                  <option value="equipamento">Equipamentos e manutenção</option>
+                  <option value="outros">Outros</option>
+                </select>
+              </label>
+              <label class="space-y-1">
+                <span class="font-medium text-slate-600">Quantidade</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  id="bar-transaction-quantity"
+                  required
+                  class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </label>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <label class="space-y-1">
+                <span class="font-medium text-slate-600">Valor unitário (R$)</span>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  id="bar-transaction-unit"
+                  required
+                  class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </label>
+              <label class="space-y-1">
+                <span class="font-medium text-slate-600">Total (R$)</span>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  id="bar-transaction-total"
+                  required
+                  class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </label>
+            </div>
+            <label class="space-y-1 text-sm">
+              <span class="font-medium text-slate-600">Descrição detalhada / evento</span>
+              <input
+                type="text"
+                id="bar-transaction-notes"
+                placeholder="Ex.: Evento beneficente, compra de mangueira, reposição de copos..."
+                class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
+            <label class="space-y-1 text-sm">
+              <span class="font-medium text-slate-600">Comprovante (opcional)</span>
+              <div class="relative">
+                <div
+                  class="flex items-center justify-between gap-3 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-500 cursor-pointer hover:border-slate-400 transition"
+                >
+                  <span class="font-medium text-slate-700">Escolher arquivo</span>
+                  <span id="bar-transaction-receipt-label" class="text-xs text-slate-400">Nenhum arquivo selecionado</span>
+                </div>
+                <input
+                  type="file"
+                  id="bar-transaction-receipt"
+                  accept="image/*,.pdf"
+                  class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </div>
+              <span class="text-[11px] text-slate-500">Anexe PDF ou imagem com até 10 MB.</span>
+            </label>
+            <div id="bar-transaction-feedback" class="text-xs text-slate-500" role="status" aria-live="polite" data-feedback data-tone="info"></div>
+            <button
+              type="submit"
+              class="w-full px-4 py-2 rounded-md bg-secondary text-white text-sm font-medium hover:bg-black transition"
+            >
+              Registrar movimentação
+            </button>
+          </form>
+        </article>
+      </section>
+
+      <section class="bg-white rounded-xl shadow p-6 space-y-4 border border-slate-200">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-semibold sm:text-xl">Histórico de movimentações</h2>
+            <p class="text-xs text-slate-500 sm:text-sm">
+              Entradas e saídas registradas ficam armazenadas para auditoria e transparência.
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+          <label class="flex items-center gap-2 text-slate-600">
+            <span class="font-semibold">Filtrar mês</span>
+            <select
+              id="bar-transactions-month"
+              class="rounded-md border border-slate-300 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Todos</option>
+            </select>
+          </label>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[640px] divide-y divide-slate-200 text-xs sm:text-sm" id="bar-transactions-table">
+            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th class="px-4 py-3 text-left">Data</th>
+                <th class="px-4 py-3 text-left">Tipo</th>
+                <th class="px-4 py-3 text-left">Categoria</th>
+                <th class="px-4 py-3 text-left">Quantidade</th>
+                <th class="px-4 py-3 text-left">Valor</th>
+                <th class="px-4 py-3 text-left">Descrição</th>
+                <th class="px-4 py-3 text-left">Comprovante</th>
+                <th class="px-4 py-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-xs sm:text-sm whitespace-nowrap"></tbody>
+          </table>
+        </div>
+        <div id="bar-transactions-empty" class="text-xs text-slate-500 py-4 text-center hidden">
+          Nenhuma movimentação registrada até o momento.
+        </div>
+      </section>
+    </main>
+
+    <dialog id="bar-delete-transaction-dialog" class="p-0 rounded-xl shadow-2xl max-w-md w-full" aria-modal="true">
+      <form method="dialog" class="bg-white rounded-xl overflow-hidden" id="bar-delete-transaction-form">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Excluir movimentação</h3>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-5 space-y-2 text-sm text-slate-600">
+          <p>Tem certeza que deseja excluir esta movimentação do bar?</p>
+          <p class="text-xs text-slate-500" id="bar-delete-transaction-summary">Essa ação remove o lançamento do histórico.</p>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-md bg-rose-500 text-white text-sm font-medium hover:bg-rose-600">
+            Excluir
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="bar-summary-dialog" class="p-0 rounded-xl shadow-2xl max-w-md w-full summary-modal" aria-modal="true">
+      <div class="bg-white rounded-xl overflow-hidden summary-modal-body">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold" id="bar-summary-title">Resumo do bar</h3>
+            <p class="text-xs text-slate-500" id="bar-summary-subtitle"></p>
+          </div>
+          <button type="button" data-action="close" class="modal-close" aria-label="Fechar modal">&times;</button>
+        </div>
+        <div class="px-6 py-5 space-y-2 text-sm text-slate-600">
+          <p id="bar-summary-description"></p>
+          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+            <span class="text-xs uppercase tracking-wide text-slate-400">Valor atual</span>
+            <p class="text-xl font-semibold text-secondary" id="bar-summary-value">R$ 0,00</p>
+          </div>
+          <p id="bar-summary-empty" class="text-xs text-slate-500 hidden">Sem valores detalhados.</p>
+          <ul id="bar-summary-list" class="space-y-2 max-h-56 overflow-y-auto pr-1 text-xs text-slate-600"></ul>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+          <button type="button" data-action="close" class="px-4 py-2 rounded-md border border-slate-300 text-sm">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <script type="module">
+  import { getFirebaseAuth } from "./scripts/firebase-client.js";
+  const auth = getFirebaseAuth();
+  const INACTIVITY_LIMIT_MINUTES = 15; // ⏱ tempo máximo de inatividade (ajustável)
+  let inactivityTimer;
+
+  function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(async () => {
+      const user = auth.currentUser;
+      if (user) {
+        await signOut(auth);
+        alert("Sua sessão expirou por inatividade. Faça login novamente.");
+        window.location.href = "login.html"; // 🔐 ajuste conforme o nome da sua tela de login
+      }
+    }, INACTIVITY_LIMIT_MINUTES * 60 * 1000);
+  }
+
+  // Eventos que resetam o contador de inatividade
+  ["mousemove", "keydown", "click", "scroll", "touchstart"].forEach(event => {
+    window.addEventListener(event, resetInactivityTimer);
+  });
+
+  // Inicia o temporizador ao carregar
+  resetInactivityTimer();
+
+  // 🔒 Refresca sessão se aba estiver oculta e reaberta após longo tempo
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      const lastActive = Number(localStorage.getItem("lastActive")) || 0;
+      const now = Date.now();
+      const diffMinutes = (now - lastActive) / 1000 / 60;
+      if (diffMinutes > INACTIVITY_LIMIT_MINUTES) {
+        signOut(auth).then(() => {
+          alert("Sua sessão expirou. Faça login novamente.");
+          window.location.href = "login.html";
+        });
+      }
+    } else {
+      localStorage.setItem("lastActive", Date.now());
+    }
+  });
+</script>
+
+    <footer class="bg-secondary text-white">
+      <div class="max-w-6xl mx-auto px-4 py-10 grid md:grid-cols-3 gap-6 text-sm">
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Nossa missão</h3>
+          <p class="text-white/80">
+            Promover o futebol amador com organização, convivência saudável e oportunidades para todas as idades.
+          </p>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Contato</h3>
+          <ul class="space-y-1 text-white/80">
+            <li>WhatsApp: <span data-copy="(18) 99801-9407">(18) 99801-9407</span></li>
+            <li>Email: <span data-copy="contato@amigosdabola.club">contato@amigosdabola.club</span></li>
+            <li>Endereço: <a class="hover:text-primary transition" href="https://www.google.com/maps/search/?api=1&query=Rodavia+Marechal+Rondon+Km+614+-+Guara%C3%A7a%C3%AD/SP" target="_blank" rel="noopener noreferrer">Rodavia Marechal Rondon Km 614 - Guaraçaí/SP</a></li>
+          </ul>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-semibold">Transparência</h3>
+          <p class="text-white/80">
+            Acesse relatórios financeiros, sócios ativos e histórico de eventos na área restrita do sistema.
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-white/10 py-4 text-center text-xs text-white/60">
+        &copy; <span id="copyright-year"></span> Amigos da Bola. Todos os direitos reservados.
+      </div>
+    </footer>
+
+    <script src="./scripts/footer.js"></script>
+    <script type="module" src="./scripts/bar.js"></script>
+    <script type="module" src="./scripts/firebase-client.js"></script>
+
+  </body>
+</html>
