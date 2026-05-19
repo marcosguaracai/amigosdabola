@@ -10,6 +10,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   getDocs,
   onSnapshot,
   serverTimestamp,
@@ -175,7 +176,6 @@ const autoInactivitySynced = new Set();
 const AUTO_INACTIVITY_REASON_TAG = "[AUTO_INADIMPLENCIA]";
 const MAX_RECEIPT_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_RECEIPT_EXTENSIONS = new Set([".pdf", ".png", ".jpg", ".jpeg", ".webp"]);
-
 function isAllowedReceiptFile(file) {
   if (!file) return true;
   if (file.type) {
@@ -726,15 +726,34 @@ function attachListeners() {
     }
   });
 
-  pendingTableBody?.addEventListener("click", (event) => {
+  pendingTableBody?.addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const { action, id, target } = button.dataset;
+    if (action === "toggle-summary" && target) {
+      const summaryRow = button.closest("tr");
+      if (!summaryRow) return;
+      const willOpen = summaryRow.classList.contains("is-summary-collapsed");
+      summaryRow.classList.toggle("is-summary-collapsed", !willOpen);
+      button.setAttribute("aria-expanded", String(willOpen));
+      button.textContent = willOpen ? "-" : "+";
+      if (!willOpen) {
+        const detailRow = pendingTableBody.querySelector(`tr[data-target="${target}"]`);
+        const detailButton = summaryRow.querySelector('button[data-action="toggle-details"]');
+        detailRow?.classList.add("hidden");
+        if (detailButton) detailButton.textContent = "Detalhar";
+      }
+      return;
+    }
     if (action === "toggle-details" && target) {
       const detailRow = pendingTableBody.querySelector(`tr[data-target="${target}"]`);
       if (detailRow) {
+        const willOpen = detailRow.classList.contains("hidden");
         detailRow.classList.toggle("hidden");
         button.textContent = detailRow.classList.contains("hidden") ? "Detalhar" : "Ocultar";
+        if (willOpen && detailRow.dataset.needsHydration === "true" && detailRow.dataset.memberId) {
+          await hydratePendingDetailRow(detailRow);
+        }
       }
       return;
     }
@@ -974,7 +993,7 @@ function refreshFinanceData() {
   availableReceiptMonths = Array.from(
     new Set(
       allPayments
-        .filter((item) => item.status === "pago")
+        .filter((item) => isPaidStatusValue(item.status))
         .map((item) => paymentMonthKey(item)),
     ),
   )
@@ -997,14 +1016,15 @@ function refreshFinanceData() {
 
   aggregateTotals = {
     revenue: allPayments
-      .filter((item) => item.status === "pago")
+      .filter((item) => isPaidStatusValue(item.status))
       .reduce((sum, item) => sum + (item.amount || defaultFee), 0),
   };
 
   const targetCompetence = focusCompetence || currentMonthValue();
   const focusPayments = scopedPayments.filter((item) => item.competence === targetCompetence);
   const totalPendingAll = allPayments
-    .filter((item) => item.status === "pendente")
+    .filter((item) => normalizeStatusValue(item.status) === "pendente")
+    .filter((item) => normalizeCompetenceValue(item.competence) === targetCompetence)
     .reduce((sum, item) => sum + (item.amount || defaultFee), 0);
   const receiptMonth = normalizeCompetenceValue(targetCompetence || currentMonthValue());
   currentReceiptMonthKey = receiptMonth;
@@ -1015,7 +1035,9 @@ function refreshFinanceData() {
   const filteredForPending = (role ? scopedPayments.filter((item) => item.memberRole === role) : scopedPayments).filter(
     (item) => shouldDisplayInPending(item),
   );
-  const pendingOnly = scopedPayments.filter((item) => item.status === "pendente");
+  const pendingOnly = scopedPayments.filter(
+    (item) => item.status === "pendente" && !isFutureCompetence(item.competence),
+  );
   pendingPayments = applyMemberSearchFilter(filteredForPending);
   pendingCountByMember = buildPendingCountMap(pendingOnly);
   persistPendingMembersCount(pendingCountByMember.size);
@@ -1066,10 +1088,11 @@ function matchesSearchTokens(target, tokens) {
 
 function shouldDisplayInPending(entry, referenceDate = new Date()) {
   const status = normalizeStatusValue(entry.status);
+  const competence = normalizeCompetenceValue(entry.competence);
+  if (isFutureCompetence(competence)) return false;
   if (status === "pendente") return true;
   if (status !== "pago" && status !== "isentado") return false;
 
-  const competence = normalizeCompetenceValue(entry.competence);
   if (!competence) return false;
 
   const today = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
@@ -1079,19 +1102,25 @@ function shouldDisplayInPending(entry, referenceDate = new Date()) {
   return withinGrace && competence === prevMonth;
 }
 
+function isFutureCompetence(competence, referenceCompetence = currentMonthValue()) {
+  const normalizedCompetence = normalizeCompetenceValue(competence);
+  const normalizedReference = normalizeCompetenceValue(referenceCompetence);
+  return Boolean(normalizedCompetence && normalizedReference && normalizedCompetence > normalizedReference);
+}
+
 function computeFinancialCards(payments, receiptMonth, globalPending = 0) {
-  const competenceTotals = computeCompetenceTotals(payments, receiptMonth);
+  const receivedEntries = getPaidCompetenceEntriesForMonth(receiptMonth);
+  const receivedTotals = receivedEntries.reduce((sum, item) => sum + (item.amount || defaultFee), 0);
+  const pendingCardSummary = getPendingCardSummaryForMonth(receiptMonth, payments);
   const cashTotals = computeCashTotals(payments, receiptMonth);
-  totalReceivedLabel.textContent = formatCurrency(competenceTotals.received);
-  totalPendingLabel.textContent = formatCurrency(globalPending);
+  totalReceivedLabel.textContent = formatCurrency(receivedTotals);
+  totalPendingLabel.textContent = formatCurrency(pendingCardSummary.total);
   cashBalanceLabel.textContent = formatCurrency(cashTotals.received);
   if (totalReceivedCountLabel) {
-    const receivedCount = computeMonthlyCounts(payments, receiptMonth).received;
-    totalReceivedCountLabel.textContent = `${receivedCount} mensalidade(s) recebida(s)`;
+    totalReceivedCountLabel.textContent = `${receivedEntries.length} mensalidade(s) recebida(s)`;
   }
   if (totalPendingCountLabel) {
-    const pendingCount = computeMonthlyCounts(payments, receiptMonth).pending;
-    totalPendingCountLabel.textContent = `${pendingCount} mensalidade(s) pendente(s)`;
+    totalPendingCountLabel.textContent = `${pendingCardSummary.count} mensalidade(s) pendente(s)`;
   }
   if (cashBalanceMonthLabel) {
     cashBalanceMonthLabel.textContent = formatMonthLong(receiptMonth);
@@ -1105,10 +1134,11 @@ function computeBreakdown(payments) {
   const roles = {};
   payments.forEach((item) => {
     const bucket = (roles[item.memberRole] ||= { received: 0, pending: 0, count: 0 });
-    if (item.status === "pago") {
+    const status = normalizeStatusValue(item.status);
+    if (isPaidStatusValue(status)) {
       bucket.received += item.amount || defaultFee;
     }
-    if (item.status === "pendente") {
+    if (status === "pendente") {
       bucket.pending += item.amount || defaultFee;
     }
     bucket.count += 1;
@@ -1122,11 +1152,11 @@ function computeCompetenceTotals(payments, monthKey) {
   const totals = { received: 0, isentado: 0, anticipated: 0 };
   payments.forEach((item) => {
     const status = normalizeStatusValue(item.status);
-    if (status !== "pago" && status !== "isentado") return;
+    if (!isPaidStatusValue(status) && status !== "isentado") return;
     const competence = normalizeCompetenceValue(item.competence);
     if (competence !== targetMonth) return;
     const value = item.amount || defaultFee;
-    if (status === "pago") {
+    if (isPaidStatusValue(status)) {
       totals.received += value;
     } else if (status === "isentado") {
       totals.isentado += value;
@@ -1288,16 +1318,8 @@ function renderSummaryDetails(type) {
         });
       });
   } else if (type === "cash-month") {
-    const targetMonth = currentReceiptMonthKey || currentMonthValue();
-    const paidEntries = allPayments
-      .filter((item) => normalizeStatusValue(item.status) === "pago")
-      .filter((item) => paymentMonthKey(item) === targetMonth)
-      .sort((a, b) => {
-        const aTime = parseDateInput(a.updatedAt || a.createdAt)?.getTime() || 0;
-        const bTime = parseDateInput(b.updatedAt || b.createdAt)?.getTime() || 0;
-        if (aTime !== bTime) return bTime - aTime;
-        return (a.memberName || "").localeCompare(b.memberName || "");
-      });
+    const targetMonth = getCurrentFinanceMonthKey();
+    const paidEntries = getPaidEntriesForMonth(targetMonth);
     if (paidEntries.length) {
       paidEntries.forEach((item) => {
         const memberName = item.memberName || "Sócio sem nome";
@@ -1381,80 +1403,111 @@ function renderSummaryDetails(type) {
         });
     }
   } else if (type === "general-revenue") {
+    const targetMonth = getCurrentFinanceMonthKey();
+    getPaidEntriesForMonth(targetMonth).forEach((item) => {
+      const memberName = item.memberName || "Sócio sem nome";
+      const competence = normalizeCompetenceValue(item.competence);
+      const paymentMonth = paymentMonthKey(item);
+      const paymentLabel = formatDateTime(item.updatedAt || item.createdAt);
+      const isAnticipated = paymentMonth && competence && competence > paymentMonth;
+      items.push({
+        label: `${paymentLabel} • ${memberName}${competence ? ` • Comp. ${formatCompetence(competence)}` : ""}${isAnticipated ? " • Antecipado" : ""}`,
+        value: formatCurrency(item.amount || defaultFee),
+      });
+    });
     items.push({
-      label: "Mensalidades (total)",
-      value: generalSummaryDues?.textContent || formatCurrency(0),
+      label: `Mensalidades (${formatCompetence(targetMonth)})`,
+      value: formatCurrency(sumDuesByMonth(targetMonth)),
     });
     generalTransactions
       .filter((tx) => tx.type === "entrada")
+      .filter((tx) => !isLegacyCarryOver(tx))
+      .filter((tx) => monthKeyFromDate(tx.date || tx.createdAt) === targetMonth)
       .forEach((tx) => {
         const title = tx.description || formatGeneralCategory(tx.category);
         items.push({
-          label: `${formatDate(tx.date)} • ${title}`,
+          label: `${formatDate(tx.date || tx.createdAt)} • ${title}`,
           value: formatCurrency(Number(tx.amount || 0)),
         });
       });
   } else if (type === "general-expense") {
+    const targetMonth = getCurrentFinanceMonthKey();
     generalTransactions
       .filter((tx) => tx.type !== "entrada")
+      .filter((tx) => monthKeyFromDate(tx.date || tx.createdAt) === targetMonth)
       .forEach((tx) => {
         const title = tx.description || formatGeneralCategory(tx.category);
         items.push({
-          label: `${formatDate(tx.date)} • ${title}`,
+          label: `${formatDate(tx.date || tx.createdAt)} • ${title}`,
           value: formatCurrency(Number(tx.amount || 0)),
         });
       });
   } else if (type === "general-balance") {
+    const targetMonth = getCurrentFinanceMonthKey();
     items.push({
-      label: "Receitas (total)",
+      label: `Receitas (${formatCompetence(targetMonth)})`,
       value: generalSummaryRevenue?.textContent || formatCurrency(0),
     });
     items.push({
-      label: "Mensalidades (total)",
-      value: generalSummaryDues?.textContent || formatCurrency(0),
+      label: `Mensalidades (${formatCompetence(targetMonth)})`,
+      value: formatCurrency(sumDuesByMonth(targetMonth)),
+    });
+    getPaidEntriesForMonth(targetMonth).forEach((item) => {
+      const memberName = item.memberName || "Sócio sem nome";
+      const competence = normalizeCompetenceValue(item.competence);
+      const paymentMonth = paymentMonthKey(item);
+      const paymentLabel = formatDateTime(item.updatedAt || item.createdAt);
+      const isAnticipated = paymentMonth && competence && competence > paymentMonth;
+      items.push({
+        label: `${paymentLabel} • ${memberName}${competence ? ` • Comp. ${formatCompetence(competence)}` : ""}${isAnticipated ? " • Antecipado" : ""}`,
+        value: formatCurrency(item.amount || defaultFee),
+      });
     });
     generalTransactions
       .filter((tx) => tx.type === "entrada")
+      .filter((tx) => !isLegacyCarryOver(tx))
+      .filter((tx) => monthKeyFromDate(tx.date || tx.createdAt) === targetMonth)
       .forEach((tx) => {
         const title = tx.description || formatGeneralCategory(tx.category);
         items.push({
-          label: `${formatDate(tx.date)} • ${title}`,
+          label: `${formatDate(tx.date || tx.createdAt)} • ${title}`,
           value: formatCurrency(Number(tx.amount || 0)),
         });
       });
     items.push({
-      label: "Despesas (total)",
+      label: `Despesas (${formatCompetence(targetMonth)})`,
       value: generalSummaryExpense?.textContent || formatCurrency(0),
     });
     generalTransactions
       .filter((tx) => tx.type !== "entrada")
+      .filter((tx) => monthKeyFromDate(tx.date || tx.createdAt) === targetMonth)
       .forEach((tx) => {
         const title = tx.description || formatGeneralCategory(tx.category);
         items.push({
-          label: `${formatDate(tx.date)} • ${title}`,
+          label: `${formatDate(tx.date || tx.createdAt)} • ${title}`,
           value: formatCurrency(Number(tx.amount || 0)),
         });
       });
   } else if (type === "total-received") {
-    const targetMonth = currentReceiptMonthKey || currentMonthValue();
-    const received = allPayments
-      .filter((item) => normalizeStatusValue(item.status) === "pago")
-      .filter((item) => normalizeCompetenceValue(item.competence) === targetMonth)
-      .sort((a, b) => (a.memberName || "").localeCompare(b.memberName || ""));
+    const targetMonth = getCurrentFinanceMonthKey();
+    const received = getPaidCompetenceEntriesForMonth(targetMonth);
     received.forEach((item) => {
       const memberName = item.memberName || "Sócio sem nome";
       const competence = normalizeCompetenceValue(item.competence);
       const paymentMonth = paymentMonthKey(item);
-      const isAnticipated = paymentMonth && competence && paymentMonth < competence;
-      const label = `${memberName} • ${formatCompetence(competence)}${isAnticipated ? " • Antecipado" : ""}`;
+      const paymentLabel = formatDateTime(item.updatedAt || item.createdAt);
+      const isAnticipated = paymentMonth && competence && competence > paymentMonth;
+      const label = `${paymentLabel} • ${memberName}${competence ? ` • Comp. ${formatCompetence(competence)}` : ""}${isAnticipated ? " • Antecipado" : ""}`;
       items.push({
         label,
         value: formatCurrency(item.amount || defaultFee),
       });
     });
   } else if (type === "pending-total") {
+    const targetMonth = currentReceiptMonthKey || currentMonthValue();
     const pending = allPayments
       .filter((item) => normalizeStatusValue(item.status) === "pendente")
+      .filter((item) => normalizeCompetenceValue(item.competence) === targetMonth)
       .sort((a, b) => {
         const nameCompare = (a.memberName || "").localeCompare(b.memberName || "");
         if (nameCompare !== 0) return nameCompare;
@@ -1567,7 +1620,7 @@ function renderReceiptsSummary(payments) {
   const fragment = document.createDocumentFragment();
   const targetMonth = currentReceiptMonthKey || currentMonthValue();
   const paidAll = payments
-    .filter((item) => normalizeStatusValue(item.status) === "pago")
+    .filter((item) => isPaidStatusValue(item.status))
     .filter((item) => {
       const paymentMonth = paymentMonthKey(item);
       const competence = normalizeCompetenceValue(item.competence);
@@ -1707,6 +1760,82 @@ function renderReceiptsSummary(payments) {
   receiptsList.appendChild(fragment);
 }
 
+function getCurrentFinanceMonthKey() {
+  return currentReceiptMonthKey || focusCompetence || currentMonthValue();
+}
+
+function getPaidEntriesForMonth(monthKey) {
+  const targetMonth = normalizeCompetenceValue(monthKey || getCurrentFinanceMonthKey());
+  const byPaymentKey = new Map();
+  allPayments
+    .filter((item) => isPaidStatusValue(item.status))
+    .filter((item) => paymentMonthKey(item) === targetMonth)
+    .forEach((item) => {
+      const competence = normalizeCompetenceValue(item.competence);
+      const key = item.docId || item.id || `${item.memberId || item.memberName}|${competence}|${toMillis(item.updatedAt || item.createdAt)}`;
+      if (!byPaymentKey.has(key)) {
+        byPaymentKey.set(key, { ...item, competence });
+      }
+    });
+  return Array.from(byPaymentKey.values())
+    .sort((a, b) => {
+      const aTime = parseDateInput(a.updatedAt || a.createdAt)?.getTime() || 0;
+      const bTime = parseDateInput(b.updatedAt || b.createdAt)?.getTime() || 0;
+      if (aTime !== bTime) return bTime - aTime;
+      return (a.memberName || "").localeCompare(b.memberName || "");
+    });
+}
+
+function getPaidCompetenceEntriesForMonth(monthKey) {
+  const targetMonth = normalizeCompetenceValue(monthKey || getCurrentFinanceMonthKey());
+  return allPayments
+    .filter((item) => isPaidStatusValue(item.status))
+    .filter((item) => normalizeCompetenceValue(item.competence) === targetMonth)
+    .sort((a, b) => {
+      const nameCompare = (a.memberName || "").localeCompare(b.memberName || "", "pt-BR");
+      if (nameCompare !== 0) return nameCompare;
+      return toMillis(b.updatedAt || b.createdAt) - toMillis(a.updatedAt || a.createdAt);
+    });
+}
+
+function getPendingCardSummaryForMonth(monthKey, payments = allPayments) {
+  const targetMonth = normalizeCompetenceValue(monthKey || getCurrentFinanceMonthKey());
+  if (isFutureCompetence(targetMonth)) {
+    return { count: 0, total: 0 };
+  }
+  const fallbackEntries = (payments || [])
+    .filter((item) => normalizeStatusValue(item.status) === "pendente")
+    .filter((item) => normalizeCompetenceValue(item.competence) === targetMonth)
+    .filter((item) => !isFutureCompetence(item.competence));
+
+  if (!membersIndex.length) {
+    return {
+      count: fallbackEntries.length,
+      total: fallbackEntries.reduce((sum, item) => sum + (item.amount || defaultFee), 0),
+    };
+  }
+
+  const byMember = new Map(
+    (payments || [])
+      .filter((item) => normalizeCompetenceValue(item.competence) === targetMonth)
+      .map((item) => [item.memberId || item.memberName || item.id, item]),
+  );
+
+  let count = 0;
+  let total = 0;
+  membersIndex
+    .filter((member) => shouldCharge(member))
+    .forEach((member) => {
+      const entry = byMember.get(member.id) || byMember.get(member.name);
+      const status = normalizeStatusValue(entry?.status || "pendente");
+      if (isPaidStatusValue(status) || status === "isentado" || status.includes("isento")) return;
+      count += 1;
+      total += Number(entry?.amount || member.monthlyFee || defaultFee);
+    });
+
+  return { count, total };
+}
+
 function computeMonthlyCounts(payments, monthKey) {
   const targetMonth = normalizeCompetenceValue(monthKey || currentMonthValue());
   const counts = { received: 0, pending: 0, isentado: 0 };
@@ -1735,6 +1864,14 @@ function getMonthlyStatusBucket(item) {
   if (status.startsWith("pago") || status === "quitado") return "received";
   if (status.includes("isento") || status === "isentado") return "isentado";
   return "";
+}
+
+function formatPaymentStatus(status) {
+  const normalized = normalizeStatusValue(status);
+  if (isPaidStatusValue(normalized)) return "Pago";
+  if (normalized === "isentado" || normalized.includes("isento")) return "Isento";
+  if (normalized === "pendente") return "Pendente";
+  return normalized || "--";
 }
 
 function getMemberNamesByStatusBucket(monthKey, bucket) {
@@ -1986,9 +2123,7 @@ function renderFinanceInsights() {
 
 function sumDuesByMonth(monthKey) {
   if (!monthKey) return 0;
-  return allPayments
-    .filter((item) => isPaidStatusValue(item.status))
-    .filter((item) => paymentMonthKey(item) === monthKey)
+  return getPaidEntriesForMonth(monthKey)
     .reduce((sum, item) => sum + (item.amount || defaultFee), 0);
 }
 
@@ -2145,7 +2280,7 @@ function renderChart(payments, months) {
     labels.push(formatCompetence(competence));
     const monthly = payments.filter((item) => item.competence === competence);
     receivedData.push(
-      monthly.filter((item) => item.status === "pago").reduce((sum, item) => sum + (item.amount || defaultFee), 0),
+      monthly.filter((item) => isPaidStatusValue(item.status)).reduce((sum, item) => sum + (item.amount || defaultFee), 0),
     );
     pendingData.push(
       monthly
@@ -2225,7 +2360,7 @@ function renderPendingTable() {
 
   const latestResolvedByMember = new Map();
   allPayments
-    .filter((item) => item.memberId && normalizeStatusValue(item.status) === "pago")
+    .filter((item) => item.memberId && isPaidStatusValue(item.status))
     .forEach((item) => {
       const key = item.memberId || item.memberName;
       const existing = latestResolvedByMember.get(key);
@@ -2306,12 +2441,14 @@ function renderPendingTable() {
       (group.memberId ? membersMap.get(group.memberId) : null) ||
       membersIndex.find((member) => member.name === group.memberName) ||
       null;
-    const isInactiveByStatus = memberRecord ? normalizeStatusValue(memberRecord.status) !== "ativo" : false;
-    const isInactive = isInactiveByStatus;
-    const sortedEntries = group.entries.slice().sort((a, b) => b.competence.localeCompare(a.competence));
+    const isInactive = memberRecord ? normalizeStatusValue(memberRecord.status) !== "ativo" : false;
+    const visibleEntries = group.entries.filter((entry) => !isFutureCompetence(entry.competence));
+    const sortedEntries = visibleEntries.slice().sort((a, b) => b.competence.localeCompare(a.competence));
     const mostRecent = sortedEntries[0];
     const memberKey = group.memberId || group.memberName;
-    const pendingEntries = isInactive ? [] : group.entries.filter((entry) => entry.status === "pendente");
+    const pendingEntries = isInactive
+      ? []
+      : visibleEntries.filter((entry) => entry.status === "pendente" && !isFutureCompetence(entry.competence));
     const totalAmount = pendingEntries.reduce((sum, entry) => sum + (entry.amount || defaultFee), 0);
     const pendingCount = isInactive ? 0 : pendingCountByMember.get(memberKey) || pendingEntries.length;
     const previousMonthKey = competenceMonthsAgo(1);
@@ -2333,7 +2470,7 @@ function renderPendingTable() {
     });
     const previousMonthPaid = previousMonthEntries.some((entry) => {
       const status = normalizeStatusValue(entry.status);
-      return status === "pago" || status === "isentado";
+      return isPaidStatusValue(status) || status === "isentado";
     });
     const previousMonthPending = previousMonthEntries.some(
       (entry) => normalizeStatusValue(entry.status) === "pendente",
@@ -2358,13 +2495,14 @@ function renderPendingTable() {
       const overdueEntries = pendingEntries.filter((entry) => isPaymentOverdue(entry));
       const overdueCount = overdueEntries.length;
       const oldestOverdue = overdueEntries.length ? overdueEntries[overdueEntries.length - 1] : null;
-      const severeDelay = overdueCount >= 2;
-      const warningDelay = !severeDelay && overdueCount === 1;
+      const severeDelay = adjustedPendingCount >= 2;
+      const warningDelay = !severeDelay && adjustedPendingCount === 1;
+      const isCurrentIsentado = adjustedPendingCount === 0 && normalizeStatusValue(mostRecent?.status) === "isentado";
       const summaryRow = document.createElement("tr");
-      summaryRow.className = `text-sm ${
+      summaryRow.className = `text-sm is-summary-collapsed ${
         isInactive
           ? "bg-slate-100 text-slate-500"
-          : pendingCount === 0
+          : adjustedPendingCount === 0
           ? "bg-emerald-50/70 text-emerald-700"
           : severeDelay
             ? "bg-rose-50/80 text-rose-700"
@@ -2374,22 +2512,24 @@ function renderPendingTable() {
       }`;
     summaryRow.dataset.member = memberKey;
     const memberName = (group.memberName || "").trim();
-    const warningBadge = !isInactive && severeDelay
-      ? `<span class="ml-2 inline-flex items-center rounded-full bg-rose-100 px-2 py-[2px] text-[10px] font-semibold uppercase text-rose-600">${overdueCount} vencidas</span>`
-      : !isInactive && warningDelay
-      ? `<span class="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-[2px] text-[10px] font-semibold uppercase text-amber-600">1 vencida</span>`
-      : "";
     summaryRow.innerHTML = `
   <td class="px-4 py-3 font-medium flex items-center gap-2">
     <span class="text-slate-400">${serial}.</span>
-    <span class="ml-1 inline-flex items-center gap-2 max-w-full ${isInactive ? "text-slate-500" : hasPreviousMonthOutstanding ? "text-rose-600" : pendingCount === 0 ? "text-emerald-700" : ""}">
+    <span class="finance-pending-summary-name ml-1 inline-flex items-center gap-2 max-w-full ${isInactive ? "text-slate-500" : severeDelay ? "text-rose-600" : warningDelay ? "text-amber-700" : adjustedPendingCount === 0 ? "text-emerald-700" : ""}">
       <span class="finance-pending-name" title="${memberName}">${memberName}</span>
-      ${warningBadge}
     </span>
+    <button
+      type="button"
+      data-action="toggle-summary"
+      data-target="${memberKey}"
+      class="finance-pending-summary-toggle"
+      aria-expanded="false"
+      aria-label="Abrir resumo"
+    >+</button>
   </td>
-  <td class="px-4 py-3">${isInactive ? "Inativo" : adjustedPendingCount > 0 ? `${adjustedPendingCount} pendências` : "Não há pendências"}</td>
-  <td class="px-4 py-3 text-right">${adjustedPendingCount > 0 ? formatCurrency(adjustedTotalAmount) : "—"}</td>
-  <td class="px-4 py-3">${formatCompetence(mostRecent?.competence)}</td>
+  <td class="px-4 py-3">${isInactive ? "Inativo" : adjustedPendingCount > 0 ? `${adjustedPendingCount} pendências` : normalizeStatusValue(mostRecent?.status) === "isentado" ? "Isento" : "Em dia"}</td>
+  <td class="px-4 py-3 text-right">${adjustedPendingCount > 0 ? formatCurrency(adjustedTotalAmount) : formatCurrency(0)}</td>
+  <td class="px-4 py-3">${mostRecent?.competence ? formatCompetence(mostRecent.competence) : "—"}</td>
   <td class="py-3 pr-6 text-right whitespace-nowrap">
         <div class="flex justify-end pr-1">
           <button
@@ -2406,11 +2546,17 @@ function renderPendingTable() {
 
       fragment.appendChild(summaryRow);
       fitTextToSingleLine(summaryRow.querySelector(".finance-pending-name"));
+      if (!mostRecent?.competence && group.memberId) {
+        void hydratePendingSummaryReference(summaryRow, group.memberId, group.memberName);
+      }
 
       const detailRow = document.createElement("tr");
       detailRow.className = "hidden";
       detailRow.dataset.target = memberKey;
-      const detailEntries = sortedEntries.slice();
+      detailRow.dataset.memberId = group.memberId || "";
+      detailRow.dataset.memberName = group.memberName || "";
+      detailRow.dataset.memberRole = group.memberRole || "";
+      const detailEntries = pendingEntries.slice();
       if (needsPreviousMonthRow) {
         detailEntries.push({
           id: `synthetic:${memberKey}:${previousMonthKey}`,
@@ -2458,6 +2604,7 @@ function renderPendingTable() {
           `;
         })
         .join("");
+      detailRow.dataset.needsHydration = detailEntries.length ? "false" : "true";
       detailRow.innerHTML = `
   <td colspan="5" class="p-0">
     <div class="space-y-2 px-1 pb-2">
@@ -2496,6 +2643,121 @@ function renderPendingTable() {
     });
 
   pendingTableBody.appendChild(fragment);
+}
+
+async function hydratePendingSummaryReference(summaryRow, memberId, memberName = "") {
+  try {
+    const memberPaymentsRef = collection(db, "members", memberId, "payments");
+    const memberPaymentsQuery = query(memberPaymentsRef, orderBy("competence", "desc"), limit(1));
+    const snapshot = await getDocs(memberPaymentsQuery);
+    const latestDoc = snapshot.docs[0];
+    if (!latestDoc) return;
+    const data = latestDoc.data() || {};
+    const competence = normalizeCompetenceValue(data.competence || latestDoc.id || "");
+    if (!competence) return;
+    const summaryCells = summaryRow.querySelectorAll("td");
+    if (summaryCells[3]) {
+      summaryCells[3].textContent = formatCompetence(competence);
+    }
+  } catch (error) {
+    console.warn("Não foi possível carregar a referência resumida do sócio:", memberName || memberId, error);
+  }
+}
+
+function renderPendingDetailRows(entries = []) {
+  return entries
+    .slice()
+    .filter((entry) => !isFutureCompetence(entry.competence))
+    .sort((a, b) => (b.competence || "").localeCompare(a.competence || ""))
+    .map((entry) => {
+      const isOverdue = isPaymentOverdue(entry);
+      const normalizedStatus = normalizeStatusValue(entry.status);
+      const isPaid = isPaidStatusValue(normalizedStatus);
+      const isIsentado = normalizedStatus === "isentado" || normalizedStatus.includes("isento");
+      const actionContent = isPaid
+        ? `<span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-[6px] text-[11px] font-semibold text-emerald-700 border border-emerald-200">Pago</span>`
+        : isIsentado
+        ? `<span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-[6px] text-[11px] font-semibold text-slate-600 border border-slate-200">Isento</span>`
+        : `<button
+              type="button"
+              data-action="receive"
+              data-id="${entry.id}"
+              class="px-3 py-1 text-[11px] rounded-md border border-slate-200 hover:border-primary"
+            >
+              Registrar pagamento
+            </button>`;
+      return `
+        <tr class="${isOverdue ? "bg-rose-50/70 text-rose-700" : ""}">
+          <td class="px-3 py-2 align-top" style="width: 13%; min-width: 80px;">${formatCompetence(entry.competence)}</td>
+          <td class="px-3 py-2 align-top" style="width: 11%; min-width: 80px;">${formatCurrency(entry.amount || defaultFee)}</td>
+          <td class="pl-3 pr-2 py-2 align-top" style="width: 20%; min-width: 120px;">${formatDateTime(entry.updatedAt)}</td>
+          <td class="px-3 py-2 text-slate-600 leading-5 align-top break-words" style="width: 20%; min-width: 120px; max-width: 160px;">${entry.notes || "--"}</td>
+          <td class="px-3 py-2 text-right align-top whitespace-nowrap" style="width: 18%; min-width: 120px;">
+            ${actionContent}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function hydratePendingDetailRow(detailRow) {
+  if (!detailRow?.dataset?.memberId) return;
+  const memberId = detailRow.dataset.memberId;
+  const memberName = detailRow.dataset.memberName || "Sócio";
+  const memberRole = detailRow.dataset.memberRole || "socio";
+  const tbody = detailRow.querySelector("tbody");
+  const summaryRow = detailRow.previousElementSibling;
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-3 text-sm text-slate-500">Carregando histórico...</td></tr>`;
+  try {
+    const memberPaymentsRef = collection(db, "members", memberId, "payments");
+    const memberPaymentsQuery = query(memberPaymentsRef, orderBy("competence", "desc"));
+    const snapshot = await getDocs(memberPaymentsQuery);
+    const entries = snapshot.docs
+      .map((docSnap) => {
+        const data = docSnap.data();
+        const competence = normalizeCompetenceValue(data.competence || docSnap.id || "");
+        if (!competence) return null;
+        const normalizedStatus = normalizeStatusValue(data.status);
+        return {
+          id: `${memberId}|${competence}`,
+          docId: docSnap.id,
+          memberId,
+          memberName,
+          memberRole,
+          competence,
+          status: normalizedStatus,
+          notes: data.notes || "",
+          amount: normalizeAmountValue(data.amount, defaultFee),
+          updatedAt: data.updatedAt || null,
+          synthetic: false,
+        };
+      })
+      .filter(Boolean);
+
+    if (!entries.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-3 text-sm text-slate-500">Nenhum histórico financeiro encontrado.</td></tr>`;
+      detailRow.dataset.needsHydration = "false";
+      return;
+    }
+
+    entries.forEach((entry) => {
+      pendingPaymentsMap.set(entry.id, entry);
+    });
+    tbody.innerHTML = renderPendingDetailRows(entries);
+    if (summaryRow && entries.length) {
+      const summaryCells = summaryRow.querySelectorAll("td");
+      const mostRecent = entries[0];
+      if (summaryCells[3] && mostRecent?.competence) {
+        summaryCells[3].textContent = formatCompetence(mostRecent.competence);
+      }
+    }
+    detailRow.dataset.needsHydration = "false";
+  } catch (error) {
+    console.error("Não foi possível carregar o histórico financeiro do sócio:", error);
+    tbody.innerHTML = `<tr><td colspan="5" class="px-3 py-3 text-sm text-rose-600">Não foi possível carregar o histórico deste sócio.</td></tr>`;
+  }
 }
 
 function collectMembersForAutoInactivity(payments, referenceCompetence = currentMonthValue()) {
@@ -2712,7 +2974,7 @@ function buildGeneralMovementsList() {
   });
 
   allPayments
-    .filter((item) => normalizeStatusValue(item.status) === "pago")
+    .filter((item) => isPaidStatusValue(item.status))
     .forEach((item) => {
       const competence = normalizeCompetenceValue(item.competence);
       const paymentDate = item.updatedAt || item.createdAt || null;
@@ -2894,38 +3156,40 @@ function updateOverallTotals() {
 
 function enrichPayments(basePayments) {
   const paymentMap = new Map();
-  const results = [];
 
-  // 🔹 Normaliza os payments existentes
   basePayments.forEach((payment) => {
     if (!payment.memberId || !payment.competence) return;
 
-    const compDate = competenceToMonthDate(payment.competence);
+    const competence = normalizeCompetenceValue(payment.competence);
+    if (!competence) return;
+    const compDate = competenceToMonthDate(competence);
     const memberRecord = membersMap.get(payment.memberId);
+    const status = normalizeStatusValue(payment.status);
 
-    // 🔒 Ignora mensalidades anteriores à data de entrada real
+    // Ignora apenas pendências anteriores à data de entrada real; pagamentos já recebidos devem aparecer nos relatórios.
     if (memberRecord) {
       const firstAllowedDate = resolveFirstChargeDate(memberRecord);
-      if (compDate && firstAllowedDate && compDate < firstAllowedDate) {
+      if (compDate && firstAllowedDate && compDate < firstAllowedDate && status === "pendente") {
         return;
       }
     }
 
-    const key = `${payment.memberId}|${payment.competence}`;
+    const key = `${payment.memberId}|${competence}`;
     const normalized = {
       ...payment,
+      competence,
+      status,
       id: key,
       docId: payment.docId || "",
       amount: Number(payment.amount || defaultFee),
     };
 
-    paymentMap.set(key, normalized);
-    results.push(normalized);
+    const current = paymentMap.get(key);
+    paymentMap.set(key, chooseMonthlyPaymentRecord(current, normalized));
   });
 
-  // 🔹 Se não houver sócios indexados, retorna o que já tem
   if (!membersIndex.length) {
-    return results.sort((a, b) => a.competence.localeCompare(b.competence));
+    return Array.from(paymentMap.values()).sort((a, b) => a.competence.localeCompare(b.competence));
   }
 
   const currentCompetence = currentMonthValue();
@@ -2975,17 +3239,38 @@ function enrichPayments(basePayments) {
         };
 
         paymentMap.set(key, synthetic);
-        results.push(synthetic);
       });
     });
 
-  // 🔹 Retorna ordenado e com valores numéricos garantidos
-  return results
+  return Array.from(paymentMap.values())
     .sort((a, b) => a.competence.localeCompare(b.competence))
     .map((payment) => ({
       ...payment,
       amount: Number(payment.amount || defaultFee),
     }));
+}
+
+function chooseMonthlyPaymentRecord(current, candidate) {
+  if (!current) return candidate;
+  const currentTime = toMillis(current.updatedAt || current.createdAt);
+  const candidateTime = toMillis(candidate.updatedAt || candidate.createdAt);
+  if (currentTime && candidateTime && candidateTime !== currentTime) {
+    return candidateTime > currentTime ? candidate : current;
+  }
+  const currentRank = paymentStatusRank(current.status);
+  const candidateRank = paymentStatusRank(candidate.status);
+  if (candidateRank !== currentRank) {
+    return candidateRank > currentRank ? candidate : current;
+  }
+  return candidateTime >= currentTime ? candidate : current;
+}
+
+function paymentStatusRank(status) {
+  const normalized = normalizeStatusValue(status);
+  if (isPaidStatusValue(normalized)) return 3;
+  if (normalized === "isentado" || normalized.includes("isento")) return 2;
+  if (normalized === "pendente") return 1;
+  return 0;
 }
 
 function renderMemberOptions(preselectId = "") {
@@ -3352,67 +3637,11 @@ async function importFinanceData(file) {
     }
 
     const emailFromRow = normalizeEmailValue(row.get("email") || row.get("e-mail") || "");
-    const provisionalPassword = extractTemporaryPassword(row, originalRow);
-    const mustResetFromRow = parseBooleanFlag(row.get("mustresetpassword"));
-    const resolvedMustReset =
-      typeof mustResetFromRow === "boolean" ? mustResetFromRow : Boolean(provisionalPassword);
-
     const { member, reason } = resolveMemberForImport(row, { membersByEmail, membersByName });
     if (!member) {
-      const fallbackId = normalizeIdentifier(candidateName);
-      if (!fallbackId) {
-        if (reason && reason !== "linha sem identificação") {
-          unmatched.push(reason);
-        }
-        continue;
+      if (reason && reason !== "linha sem identificação") {
+        unmatched.push(reason);
       }
-      const fallbackMember = {
-        id: fallbackId,
-        name: candidateName,
-        role: row.get("perfil") || row.get("role") || "socio",
-        status: (row.get("status") || "ativo").toLowerCase(),
-        monthlyFee: parseCurrency(row.get("mensalidade")) || defaultFee,
-        joinDate: formatBrazilianDateString(
-          row.get("joindate") ||
-            row.get("entrada") ||
-            row.get("Entrada no clube") ||
-            row.get("data de entrada") ||
-            "",
-        ),
-        birthDate: formatBrazilianDateString(
-          row.get("birthdate") ||
-            row.get("data de nascimento") ||
-            row.get("datadenascimento") ||
-            row.get("nascimento") ||
-            row.get("aniversario") ||
-            "",
-        ),
-        email: emailFromRow || null,
-        temporaryPassword: provisionalPassword || null,
-        mustResetPassword: resolvedMustReset,
-      };
-      membersIndex.push(fallbackMember);
-      membersMap.set(fallbackMember.id, fallbackMember);
-      membersByName.set(normalizeName(fallbackMember.name), fallbackMember);
-      if (emailFromRow) {
-        membersByEmail.set(emailFromRow, fallbackMember);
-      }
-      processMemberRow(
-        fallbackMember,
-        row,
-        originalRow,
-        referenceYear,
-        writes,
-        () => {
-          paymentsCreated += 1;
-        },
-        {
-          isNew: true,
-          normalizedName: candidateName,
-          supplementalPayments,
-        },
-      );
-      membersMatched += 1;
       continue;
     }
 
@@ -3617,12 +3846,6 @@ function processMemberRow(member, row, originalRow, referenceYear, writes, onPay
     ]);
     onPayment();
   });
-}
-
-function normalizeIdentifier(value) {
-  const normalized = normalizeName(value);
-  if (!normalized) return "";
-  return normalized.replace(/[^a-z0-9]/g, "-");
 }
 
 function normalizeEmailValue(value) {
@@ -4255,13 +4478,18 @@ const CHARGEABLE_ROLES = new Set([
   "imprensa",
   "financeiro",
   "tesoureiro",
+  "member",
   "socio",
   "visitante",
   "crianca",
 ]);
 
 function normalizeRoleValue(value) {
-  return String(value || "visitante").trim().toLowerCase();
+  return String(value || "visitante")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 }
 
 function shouldCharge(member) {
@@ -4293,6 +4521,11 @@ function parseDateInput(raw) {
   if (!raw) return null;
   if (raw instanceof Date) return raw;
   if (raw?.toDate) return raw.toDate();
+  if (typeof raw === "object" && Number.isFinite(raw.seconds)) {
+    const milliseconds = raw.seconds * 1000 + Math.floor((raw.nanoseconds || 0) / 1000000);
+    const parsed = new Date(milliseconds);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
 
   if (typeof raw === "string") {
     let parsed = null;
@@ -4332,7 +4565,27 @@ function parseDateInput(raw) {
 // 🧠 Determina a data do primeiro mês de cobrança
 function resolveFirstChargeDate(member) {
   const baseline = new Date(CLUB_START_DATE.getFullYear(), CLUB_START_DATE.getMonth(), 1);
-  return baseline;
+  const joinCandidates = [
+    member?.firstChargeDate,
+    member?.startDate,
+    member?.joinDate,
+    member?.joinDateDisplay,
+    member?.join,
+    member?.joinMonth,
+    member?.entryDate,
+    member?.joinedAt,
+    member?.joinedOn,
+  ];
+  const joinDate =
+    joinCandidates.map((value) => parseDateString(value)).find((value) => value && !Number.isNaN(value.getTime())) ||
+    parseDateString(member?.createdAt);
+
+  if (!joinDate || Number.isNaN(joinDate.getTime())) {
+    return baseline;
+  }
+
+  const joinMonthStart = new Date(joinDate.getFullYear(), joinDate.getMonth(), 1);
+  return joinMonthStart > baseline ? joinMonthStart : baseline;
 }
 
 // 🔢 Determina a competência (AAAA-MM) do primeiro mês de cobrança
@@ -4394,6 +4647,14 @@ function parseDateString(value) {
   }
   if (typeof value === "string") {
     const trimmed = value.trim();
+    const brazilianDateMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed);
+    if (brazilianDateMatch) {
+      const [, day, month, year] = brazilianDateMatch;
+      const parsed = new Date(Number(year), Number(month) - 1, Number(day));
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
     const numeric = Number(trimmed);
     if (Number.isFinite(numeric) && numeric > 5000) {
       const excelDate = excelSerialToDate(numeric);
@@ -4510,7 +4771,15 @@ function normalizeDateInput(value) {
 }
 
 function normalizeStatusValue(value) {
-  return String(value || "pendente").trim().toLowerCase();
+  const normalized = String(value || "pendente")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+  if (["paid", "pay", "paga", "pago", "quitado", "quited"].includes(normalized)) return "pago";
+  if (["pending", "pendente", "open", "aberto", "em aberto"].includes(normalized)) return "pendente";
+  if (normalized.includes("isento") || normalized.includes("isentado") || normalized === "exempt") return "isentado";
+  return normalized || "pendente";
 }
 
 function isPaidStatusValue(status) {

@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Financeiro • Amigos da Bola</title>
     <link rel="icon" href="assets/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
@@ -128,6 +131,10 @@
         text-overflow: clip;
         line-height: 1.25;
         vertical-align: middle;
+      }
+
+      .finance-pending-summary-toggle {
+        display: none;
       }
 
       .finance-pending-container th:first-child,
@@ -361,13 +368,20 @@
 
       @media (max-width: 640px) {
         #finance-pending-body .overflow-x-auto {
-          overflow-x: auto;
+          overflow-x: visible;
+        }
+
+        .finance-pending-container {
+          display: block;
+          overflow-x: visible;
+          padding-left: 0;
+          padding-right: 0;
         }
 
         .finance-pending-container table {
-          table-layout: fixed;
+          table-layout: auto;
           width: 100%;
-          min-width: 560px;
+          min-width: 0;
           font-size: 12px;
         }
 
@@ -398,27 +412,122 @@
           min-width: 90px;
         }
 
+        .finance-pending-container > table > thead,
         #finance-pending-table thead {
-          display: table-header-group;
-        }
-
-        #finance-pending-table tr {
-          display: table-row;
-          background: transparent;
-          box-shadow: none;
-          margin-bottom: 0;
-        }
-
-        #finance-pending-table td {
-          display: table-cell;
-          padding: 10px 8px;
-          font-size: 12px;
-          border-top: 1px solid #f1f5f9;
-        }
-
-        #finance-pending-table td::before {
-          content: "";
           display: none;
+        }
+
+        #finance-pending-table {
+          display: block;
+        }
+
+        #finance-pending-table > tr:not([data-target]) {
+          display: block;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+          margin-bottom: 12px;
+          padding: 12px;
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          border-top: 0;
+          padding: 7px 0;
+          font-size: 12px;
+          line-height: 1.35;
+          white-space: normal;
+          width: 100% !important;
+          min-width: 0 !important;
+          text-align: right;
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td:first-child {
+          justify-content: flex-start;
+          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 10px;
+          text-align: left;
+        }
+
+        #finance-pending-table > tr.is-summary-collapsed:not([data-target]) > td:first-child {
+          border-bottom: 0;
+          padding-bottom: 7px;
+        }
+
+        #finance-pending-table > tr.is-summary-collapsed:not([data-target]) > td:not(:first-child) {
+          display: none;
+        }
+
+        .finance-pending-summary-toggle {
+          align-items: center;
+          background: #f8fafc;
+          border: 1px solid #cbd5e1;
+          border-radius: 999px;
+          color: #0f172a;
+          display: inline-flex;
+          flex: 0 0 auto;
+          font-size: 16px;
+          font-weight: 700;
+          height: 30px;
+          justify-content: center;
+          line-height: 1;
+          margin-left: auto;
+          width: 30px;
+        }
+
+        .finance-pending-summary-name {
+          min-width: 0;
+        }
+
+        .finance-pending-summary-toggle[aria-expanded="true"] {
+          background: #0f172a;
+          border-color: #0f172a;
+          color: #ffffff;
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td:nth-child(2)::before {
+          content: "Pendências";
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td:nth-child(3)::before {
+          content: "Valor";
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td:nth-child(4)::before {
+          content: "Referência";
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td:nth-child(5)::before {
+          content: "Ações";
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td::before {
+          color: #64748b;
+          display: inline-block;
+          flex: 0 0 auto;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          text-align: left;
+          text-transform: uppercase;
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td:last-child {
+          align-items: center;
+        }
+
+        #finance-pending-table > tr:not([data-target]) > td:last-child > div {
+          padding-right: 0;
+        }
+
+        #finance-pending-table button,
+        #finance-pending-table .inline-flex {
+          min-width: max-content;
+          white-space: nowrap;
         }
 
         #finance-pending-table tr[data-target] {
@@ -426,7 +535,19 @@
         }
 
         #finance-pending-table tr[data-target]:not(.hidden) {
-          display: table-row;
+          display: block;
+          margin: -4px 0 12px;
+        }
+
+        #finance-pending-table tr[data-target] > td {
+          display: block;
+          border-top: 0;
+          padding: 0;
+          width: 100% !important;
+        }
+
+        #finance-pending-table tr[data-target] table {
+          min-width: 520px;
         }
 
         /* Em mobile, volta a truncar o nome para evitar quebra/estouro */
@@ -795,7 +916,6 @@
       <tbody id="finance-pending-table" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
     </table>
   </div>
-
   <div id="finance-pending-empty" class="text-center text-sm text-slate-500 py-8 hidden">
     Não há pendências.
   </div>
@@ -1343,7 +1463,7 @@
     <script src="./scripts/footer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-     <script type="module" src="./scripts/finance.js?v=2"></script>
+     <script type="module" src="./scripts/finance.js?v=8"></script>
     <script type="module" src="./scripts/firebase-client.js"></script>
 
   </body>

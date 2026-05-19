@@ -1461,6 +1461,31 @@ async function loadPaymentHistory(member) {
   paymentsHistoryList.appendChild(fragment);
 }
 
+function resolveMemberFirstChargeDate(member) {
+  const billingStart = new Date(CLUB_BILLING_START.getFullYear(), CLUB_BILLING_START.getMonth(), 1);
+  const joinCandidates = [
+    member?.firstChargeDate,
+    member?.startDate,
+    member?.joinDate,
+    member?.joinDateDisplay,
+    member?.join,
+    member?.joinMonth,
+    member?.entryDate,
+    member?.joinedAt,
+    member?.joinedOn,
+  ];
+  const joinDate =
+    joinCandidates.map((value) => parseDateValue(value)).find((value) => value && !Number.isNaN(value.getTime())) ||
+    parseDateValue(member?.createdAt);
+
+  if (!joinDate || Number.isNaN(joinDate.getTime())) {
+    return billingStart;
+  }
+
+  const joinMonthStart = new Date(joinDate.getFullYear(), joinDate.getMonth(), 1);
+  return joinMonthStart > billingStart ? joinMonthStart : billingStart;
+}
+
 function renderMonthlyInstallments(member, paymentsSnap) {
   if (!paymentsMonthlyStatus || !paymentsMonthlyEmpty || !paymentsMonthlyTitle) return;
   paymentsMonthlyStatus.innerHTML = "";
@@ -1478,7 +1503,11 @@ function renderMonthlyInstallments(member, paymentsSnap) {
     });
   }
 
-  if (!statusByCompetence.size) {
+  const shouldShowExpectedMonths =
+    String(member?.status || "ativo").toLowerCase() === "ativo" &&
+    String(member?.role || "").toLowerCase() !== "crianca";
+
+  if (!statusByCompetence.size && !shouldShowExpectedMonths) {
     paymentsMonthlyStatus.classList.add("hidden");
     paymentsMonthlyEmpty.textContent = "Nenhuma mensalidade registrada.";
     paymentsMonthlyEmpty.classList.remove("hidden");
@@ -1486,14 +1515,17 @@ function renderMonthlyInstallments(member, paymentsSnap) {
     return;
   }
 
-  const joinDate = parseDateValue(member.joinDate);
-  const joinMonthStart = joinDate ? new Date(joinDate.getFullYear(), joinDate.getMonth(), 1) : null;
-  const billingStart = new Date(CLUB_BILLING_START.getFullYear(), CLUB_BILLING_START.getMonth(), 1);
-  const effectiveStart = joinMonthStart && joinMonthStart > billingStart ? joinMonthStart : billingStart;
-
   const competenceDates = Array.from(statusByCompetence.keys())
     .map((competence) => competenceToMonthDate(competence))
     .filter((date) => date instanceof Date);
+  const memberFirstChargeDate = resolveMemberFirstChargeDate(member);
+  const earliestCompetenceDate = competenceDates.length
+    ? competenceDates.reduce((acc, current) => (current < acc ? current : acc))
+    : null;
+  const effectiveStart =
+    earliestCompetenceDate && earliestCompetenceDate < memberFirstChargeDate
+      ? earliestCompetenceDate
+      : memberFirstChargeDate;
 
   const today = new Date();
   const todayMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -1514,9 +1546,7 @@ function renderMonthlyInstallments(member, paymentsSnap) {
   paymentsMonthlyTitle.textContent =
     startLabel === endLabel ? `Mensalidades — ${startLabel}` : `Mensalidades — ${startLabel} a ${endLabel}`;
 
-  const badges = Array.from(statusByCompetence.entries())
-    .map(([competence, status]) => ({ competence, status }))
-    .sort((a, b) => a.competence.localeCompare(b.competence));
+  const badges = buildMonthlyInstallmentBadges(startCompetence, endCompetence, statusByCompetence);
 
   const fragment = document.createDocumentFragment();
   badges.forEach(({ competence, status }) => {
@@ -1528,6 +1558,27 @@ function renderMonthlyInstallments(member, paymentsSnap) {
     fragment.appendChild(badge);
   });
   paymentsMonthlyStatus.appendChild(fragment);
+}
+
+function buildMonthlyInstallmentBadges(startCompetence, endCompetence, statusByCompetence) {
+  const badges = [];
+  let cursor = competenceToMonthDate(startCompetence);
+  const endDate = competenceToMonthDate(endCompetence);
+  if (!cursor || !endDate || cursor > endDate) {
+    return Array.from(statusByCompetence.entries())
+      .map(([competence, status]) => ({ competence, status }))
+      .sort((a, b) => a.competence.localeCompare(b.competence));
+  }
+
+  while (cursor <= endDate) {
+    const competence = dateToCompetence(cursor);
+    badges.push({
+      competence,
+      status: statusByCompetence.get(competence) || "pendente",
+    });
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+  }
+  return badges;
 }
 
 paymentsForm?.addEventListener("submit", async (event) => {

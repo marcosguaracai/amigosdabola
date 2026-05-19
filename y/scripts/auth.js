@@ -148,6 +148,9 @@ export async function ensureSelfProfile(user) {
   }
   const membersSnapshot = await getDocs(query(collection(db, "members"), limit(1)));
   const isFirstMember = membersSnapshot.empty;
+  if (!isFirstMember) {
+    return null;
+  }
   const newProfile = {
     id: user.uid,
     name: user.displayName || user.email.split("@")[0],
@@ -178,6 +181,11 @@ export async function requireAuth({ allowedRoles = [], redirectTo = "index.html"
         return;
       }
       const profile = await ensureSelfProfile(user);
+      if (!profile) {
+        unsubscribe();
+        window.location.href = redirectTo;
+        return;
+      }
       const normalizedRole = normalizeRole(profile.role);
       const normalizedProfile = { ...profile, role: normalizedRole };
       const normalizedAllowed = allowedRoles.map((role) => normalizeRole(role));
