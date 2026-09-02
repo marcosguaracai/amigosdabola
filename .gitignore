@@ -70,4 +70,4 @@ node_modules/
 
 # Local toolchains and vendored SDK archives
 google-cloud-sdk-*.tar.gz
-y/google-cloud-sdk/
+google-cloud-sdk/
